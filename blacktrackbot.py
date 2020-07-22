@@ -1,5 +1,4 @@
 import discord
-import sqlalchemy as db
 import json
 import pprint
 import blacktrack_token
@@ -10,8 +9,9 @@ wallets = {}
 currentBets = {}
 betsOpen = False
 TOKEN = blacktrack_token.botToken()
+channeltoWatch = 735381840835379259
 
-helpString = ''':black_joker: **BlackTrack Bot v0.1.0**
+helpString = ''':black_joker: **BlackTrack Bot v0.2.0**
 Written by Jess Merriman (github.com/ChainsawPolice)
 
 **Player commands:**
@@ -45,11 +45,11 @@ def isDealer(userObject):
 @client.event
 async def on_ready():
 	print('Logged in as {0.user}'.format(client))
-	await client.change_presence(activity=discord.Game(name="What's upcard?"))
+	await client.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="Death Grips — 'Blackjack'"))
 
 @client.event
 async def on_message(message):
-	user_id = str(message.author.id)
+	user_id = str(message.author.id) #Makes things easier down the track.
 	global betsOpen
 	global currentBets
 
@@ -77,9 +77,16 @@ async def on_message(message):
 			await message.channel.send('`{} is a dealer and thus has access to dealer-only commands.`'.format(message.author))
 		else:
 			await message.channel.send('`{} is not a dealer.`'.format(message.author))
+	if message.content.startswith('$debug clear'):
+		channel = message.channel
+		messages = []
+		async for message in channel.history(limit=int(100)):
+			messages.append(message)
+		await channel.delete_messages(messages)
 
 	# Check balance. Creates a wallet if the user doesn't have one yet.
 	if message.content.startswith('$balance'):
+		await message.delete()
 		if user_id not in wallets:
 			await message.channel.send(':hourglass: You don\'t have a wallet yet! Creating one with a balance of $100...')
 			wallets[user_id] = 100
@@ -88,30 +95,55 @@ async def on_message(message):
 
 	# Open bets. Dealer only.
 	if message.content.startswith('$openbets'):
+		# Only execute if the message author is a dealer.
 		if isDealer(message.author):
+			# Delete all messages in chat
+			messages = []
+			async for message in message.channel.history(limit=int(100)):
+				messages.append(message)
+			await message.channel.delete_messages(messages)
+
+			# If there are bets existing...
 			if bool(currentBets) == True:
 				await message.channel.send(':no_entry: **The dealer is yet to pay out some bets.** Check the open bets with `$unpaidbets`.')
-			elif betsOpen == False:
+			# If bets are already open...
+			elif betsOpen:
+				await message.channel.send(':hourglass: Bets are already open. Close them with `$closebets`.')
+			# If bets aren't open and there aren't any existing bets, then open bets.
+			else:
 				betsOpen = True
 				await message.channel.send(':white_check_mark: **Bets are now open!** Place your bets with `$bet <number>` (e.g. `$bet 50`)')
-			else:
-				await message.channel.send(':hourglass: Bets are already open. Close them with `$closebets`.')
 		else:
 			await message.channel.send(':no_entry: **Only the dealer has access to this command.**')
 
 	# Close bets. Dealer only.
 	if message.content.startswith('$closebets'):
+		# Only execute if the message author is a dealer.
 		if isDealer(message.author):
-			if betsOpen == True:
+			# If bets are closed...
+			if not betsOpen:
+				await message.channel.send(':hourglass: Bets aren\'t open yet. Open them with `$openbets`.')
+			else:
+				# Delete all messages in chat
+				messages = []
+				async for message in message.channel.history(limit=int(100)):
+					messages.append(message)
+				await message.channel.delete_messages(messages)
 				betsOpen = False
 				await message.channel.send(':no_entry: **Bets are now closed!**')
-			else:
-				await message.channel.send(':hourglass: Bets aren\'t open yet. Open them with `$openbets`.')
+				if bool(currentBets) == True:
+					messageToSend = ":moneybag: The following bets have been made:\n"
+					for userID, betValue in currentBets.items():
+						messageToSend+='  — **<@!{user}>** has bet **${amount}** _(${remainingBalance} remaining in wallet)_.\n'.format(user=userID, amount=betValue, remainingBalance=wallets[user_id])
+					await message.channel.send(messageToSend)
+				else:
+					await message.channel.send(':dink: No bets have been placed...?')
 		else:
 			await message.channel.send(':no_entry: **Only the dealer has access to this command.**')
 
 	# Place bet.
 	if message.content.startswith('$bet'):
+		await message.delete()
 		if betsOpen == True:
 			betAmount = int(message.content.split()[1].strip('$'))
 
@@ -133,6 +165,7 @@ async def on_message(message):
 
 	# Pay user n times. Dealer only.
 	if message.content.startswith('$pay'):
+		await message.delete()
 		if isDealer(message.author):
 			payCommand = message.content.split()
 			payDetails = {
@@ -145,12 +178,32 @@ async def on_message(message):
 				payAmount = currentBets[payDetails['user']] * payDetails['ratio']
 				del currentBets[payDetails['user']]
 				wallets[payDetails['user']] = int(wallets[payDetails['user']]) + int(payAmount)
-				await message.channel.send(':partying_face: **The house has paid <@!{user}> ${amount}!** Their balance is now ${balance}'.format(user=payDetails['user'],amount=payAmount, balance=wallets[payDetails['user']]))
+				await message.channel.send(':partying_face: **<@!{user}> wins!** The house has paid them ${amount}, and their balance is now ${balance}.'.format(user=payDetails['user'],amount=payAmount, balance=wallets[payDetails['user']]))
+		else:
+			await message.channel.send(':no_entry: **Only the dealer has access to this command.**')
+
+	# User got blackjack, pay them 2.5x. Dealer only.
+	if message.content.startswith('$blackjack'):
+		await message.delete()
+		if isDealer(message.author):
+			payCommand = message.content.split()
+			payDetails = {
+				'user' 	: payCommand[1][3:-1],
+				'ratio' : 2.5
+			}
+			if payDetails['user'] not in currentBets:
+				await message.channel.send(':no_entry: No bets currently standing for <@!{user}>.'.format(user=payDetails['user']))
+			else:
+				payAmount = currentBets[payDetails['user']] * payDetails['ratio']
+				del currentBets[payDetails['user']]
+				wallets[payDetails['user']] = int(wallets[payDetails['user']]) + int(payAmount)
+				await message.channel.send(':gem: **<@!{user}> got blackjack!** The house has paid them ${amount}, and their balance is now ${balance}.'.format(user=payDetails['user'],amount=payAmount, balance=wallets[payDetails['user']]))
 		else:
 			await message.channel.send(':no_entry: **Only the dealer has access to this command.**')
 
 	# User busts. Dealer only.
 	if message.content.startswith('$bust'):
+		await message.delete()
 		if isDealer(message.author):
 			payCommand = message.content.split()
 			payDetails = {
@@ -169,13 +222,13 @@ async def on_message(message):
 
 	# User pushes. Dealer only.
 	if message.content.startswith('$push'):
+		await message.delete()
 		if isDealer(message.author):
 			payCommand = message.content.split()
 			payDetails = {
 				'user' 	: payCommand[1][3:-1],
 				'ratio' : 0
 			}
-			await message.channel.send(json.dumps(payDetails, indent=4))
 			if payDetails['user'] not in currentBets:
 				await message.channel.send(':no_entry: No bets currently standing for <@!{user}>.'.format(user=payDetails['user']))
 			else:
@@ -188,6 +241,7 @@ async def on_message(message):
 
 	# View open bets.
 	if message.content.startswith('$unpaidbets') or message.content.startswith('$currentbets'):
+		await message.delete()
 		if bool(currentBets) == True:
 			if message.content.startswith('$unpaidbets'):
 				messageToSend = ":hourglass: **The house is still yet to pay out the following bets:**\n"
@@ -201,6 +255,7 @@ async def on_message(message):
 
 	# If a bet exists, double it.
 	if message.content.startswith('$doubledown') or message.content.startswith('$split'):
+		await message.delete()
 		if user_id not in wallets:
 			await message.channel.send(':no_entry: You don\'t have a wallet yet! Type `$balance` to create one.')
 		elif user_id not in currentBets:
@@ -214,9 +269,11 @@ async def on_message(message):
 
 	# Show the strategy chart
 	if message.content.startswith('$strats'):
+		await message.delete()
 		await message.channel.send('https://cdn.discordapp.com/attachments/734766427583676479/734767587157868664/BJA_Basic_Strategy.png')
 
 	if message.content.startswith('$help'):
+		await message.delete()
 		await message.channel.send(helpString)
 
 client.run(TOKEN)
