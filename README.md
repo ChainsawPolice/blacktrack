@@ -2,6 +2,7 @@
 A bet tracker for webcam games of blackjack.
 
 ## To do
+* Store wallets, bets, and totals in a permanent database rather than temporary memory.
 * Integrate standing bets into `$closebets` commands
 * Buy-in option
 * Fix the evens-only issue

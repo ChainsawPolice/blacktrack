@@ -4,13 +4,6 @@ import json
 import pprint
 import blacktrack_token
 
-# TO-DO
-# Integrate standing bets into $closebets commands
-# Buy-in option
-# Fix the evens-only issue
-# Make the #blackjack channel more like an app than a chat stream
-# Create $blackjack as an alias of $pay @user 2.5x
-
 client = discord.Client()
 pp = pprint.PrettyPrinter(indent=4)
 wallets = {}
