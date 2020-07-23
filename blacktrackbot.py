@@ -4,11 +4,12 @@ import pprint
 import blacktrack_token
 
 client = discord.Client()
+TOKEN = blacktrack_token.botToken()
+
 pp = pprint.PrettyPrinter(indent=4)
 wallets = {}
-currentBets = {}
-betsOpen = False
-TOKEN = blacktrack_token.botToken()
+currentBets = {} # A dict containing user IDs and their corresponding bet.
+betsOpen = False # Whether or not the table is accepting new bets.
 channeltoWatch = 735381840835379259
 
 helpString = ''':black_joker: **BlackTrack Bot v0.2.0**
@@ -88,8 +89,8 @@ async def on_message(message):
 	if message.content.startswith('$balance'):
 		await message.delete()
 		if user_id not in wallets:
-			await message.channel.send(':hourglass: You don\'t have a wallet yet! Creating one with a balance of $100...')
-			wallets[user_id] = 100
+			await message.channel.send(':hourglass: You don\'t have a wallet yet! Creating one with a balance of $200...')
+			wallets[user_id] = 200
 		await message.channel.send(':moneybag: <@!{name}>\'s current wallet balance is **${balance}**'.format(name=user_id, balance=wallets[user_id]))
 		print(json.dumps(wallets, indent=4))
 
@@ -120,21 +121,22 @@ async def on_message(message):
 	if message.content.startswith('$closebets'):
 		# Only execute if the message author is a dealer.
 		if isDealer(message.author):
+			await message.delete()
 			# If bets are closed...
 			if not betsOpen:
 				await message.channel.send(':hourglass: Bets aren\'t open yet. Open them with `$openbets`.')
 			else:
 				# Delete all messages in chat
-				messages = []
-				async for message in message.channel.history(limit=int(100)):
-					messages.append(message)
-				await message.channel.delete_messages(messages)
+				# messages = []
+				# async for message in message.channel.history(limit=int(100)):
+				# 	messages.append(message)
+				# await message.channel.delete_messages(messages)
 				betsOpen = False
 				await message.channel.send(':no_entry: **Bets are now closed!**')
 				if bool(currentBets) == True:
 					messageToSend = ":moneybag: The following bets have been made:\n"
 					for userID, betValue in currentBets.items():
-						messageToSend+='  — **<@!{user}>** has bet **${amount}** _(${remainingBalance} remaining in wallet)_.\n'.format(user=userID, amount=betValue, remainingBalance=wallets[user_id])
+						messageToSend+='  — **<@!{user}>** has bet **${amount}** _(${remainingBalance} remaining in wallet)_.\n'.format(user=userID, amount=betValue, remainingBalance=wallets[userID])
 					await message.channel.send(messageToSend)
 				else:
 					await message.channel.send(':dink: No bets have been placed...?')
