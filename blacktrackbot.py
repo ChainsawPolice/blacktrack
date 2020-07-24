@@ -28,7 +28,7 @@ uiEmoji = {
 	'winner'	 : [':partying_face:', discord.Colour.blue()],
 	'loser'	     : [':pensive:', discord.Colour.blue()],
 	'push'	     : [':right_facing_fist:', discord.Colour.blue()],
-	'blackjack'	 : [':brown_square:', discord.Colour.blue()],
+	'blackjack'	 : ['<:poggers:731761300509818882>', discord.Colour.blue()],
 
 	'error'      : [':no_entry:', discord.Colour.red()],
 	'raisedhand' : [':raised_hand:', discord.Colour.red()],
@@ -427,14 +427,6 @@ async def buyin(ctx, userMentionString):
 		))
 	else:
 		await ctx.send(embed=dialogBox('error', 'Only the dealer has access to this command', 'messageContent'))
-
-@client.command()
-async def initdb(ctx):
-	if deleteUserMessages == True:
-		await ctx.message.delete()
-	await ctx.send(embed=debugMessage('Creating tables...'))
-	db.create_all()
-	await ctx.send(embed=debugMessage('Database initialised!'))
 
 # -------------------------------------------------------------------------------------------- #
 
