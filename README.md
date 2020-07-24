@@ -2,7 +2,7 @@
 A bet tracker for webcam games of blackjack.
 
 ## Changelog
-### v0.2.0 (in dev)
+### v0.2.0 (live)
 #### Functionality
 * Users may now bet any amount of money, including non-even amounts and amounts that include cents/decimal places.
 * Wallets and other statistics are now saved to a database rather than being stored in memory. Wallet data will be remembered forever if the bot goes offline _(i.e. between updates/crashes)_.
@@ -14,7 +14,7 @@ A bet tracker for webcam games of blackjack.
 * Replaced the pile of `if` statements with `@client.command()` blocks, making readability and maintenance easier in the future. Nothing should change on the user end.
 * Using the internal (albeit less-pretty) `$help` command that comes baked into `commands.Bot()`.
 
-### v0.1.0 (currently live)
+### v0.1.0
 * Integrated standing bets into `$closebets` commands
 * Made the #blackjack channel more like an app than a chat stream _(the bot will delete messages when no longer relevant)_.
 * Created `$blackjack` as an alias of `$pay @user 2.5x`.
