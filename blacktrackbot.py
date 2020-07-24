@@ -15,22 +15,29 @@ betsOpen = False # Whether or not the table is accepting new bets.
 channeltoWatch = 735381840835379259
 uiEmoji = {
 	'tick'       : [':white_check_mark:', discord.Colour.green()],
-	'gear'       : [':gear:', discord.Colour.lighter_grey()],
-	'error'      : [':no_entry:', discord.Colour.red()],
-	'warning'    : [':warning:', discord.Colour.gold()],
-	'raisedhand' : [':raised_hand:', discord.Colour.red()],
-	'moneybag'   : [':moneybag:', discord.Colour.gold()],
 	'dollar'     : [':dollar:', discord.Colour.green()],
+
+	'gear'       : [':gear:', discord.Colour.lighter_grey()],
+
+	'warning'    : [':warning:', discord.Colour.gold()],
+	'moneybag'   : [':moneybag:', discord.Colour.gold()],
+	'waiting'    : [':hourglass:', discord.Colour.gold()],
+
 	'winner'	 : [':partying_face:', discord.Colour.blue()],
 	'loser'	     : [':pensive:', discord.Colour.blue()],
 	'push'	     : [':right_facing_fist:', discord.Colour.blue()],
 	'blackjack'	 : [':brown_square:', discord.Colour.blue()],
+
+	'error'      : [':no_entry:', discord.Colour.red()],
+	'raisedhand' : [':raised_hand:', discord.Colour.red()],
 }
 defaultWalletAmount = 200
 
 # -------------------------------------------------------------------------------------------- #
 #Useful functions
 
+# Check if the user is a dealer.
+# TODO: Clean this up. there's definitely a way to shorten this - there _has_ to be.
 def isDealer(userObject):
 	listOfRoleIDs = []
 	for role in userObject.roles:
@@ -47,14 +54,22 @@ def userInDatabase(userID):
 		return thisUser
 	return False
 
-# Create a message.
-def dialogBox(messageEmoji, messageTitle, messageContent='', accentColour='inherit'):
-	embed = discord.Embed(
-		title = '{emoji}  {title}'.format(emoji=uiEmoji[messageEmoji][0], title=messageTitle),
-		description = messageContent,
-		colour = uiEmoji[messageEmoji][1]
-	)
+# A wrapper for creating an dialog box-style embed message.
+def dialogBox(messageEmoji, messageTitle, messageContent=False, accentColour='inherit'):
+	if not messageContent:
+		embed = discord.Embed(
+			title = '{emoji}  {title}'.format(emoji=uiEmoji[messageEmoji][0], title=messageTitle),
+			colour = uiEmoji[messageEmoji][1]
+		)
+	else:
+		embed = discord.Embed(
+			title = '{emoji}  {title}'.format(emoji=uiEmoji[messageEmoji][0], title=messageTitle),
+			description = messageContent,
+			colour = uiEmoji[messageEmoji][1]
+		)
 	return embed
+
+# Makes debugging stuff quicker.
 def debugMessage(msg):
 	return dialogBox('gear', 'Debug output', '`{}`'.format(msg))
 
@@ -100,6 +115,7 @@ class Bets(db.Model):
 
 # -------------------------------------------------------------------------------------------- #
 # Define the commands and bot's reactions.
+
 @client.event
 async def on_ready():
 	print('Logged in as {0.user}'.format(client))
@@ -108,6 +124,7 @@ async def on_ready():
 # Checks the user's wallet balance. Creates a wallet if they don't have one already.
 @client.command()
 async def balance(ctx):
+	'''Shows your current wallet balance. Creates a wallet for you if you do not have one.'''
 	# await message.delete()
 	if userInDatabase(ctx.author.id) == False: # If user not found found in database, create a wallet for them.
 		await ctx.send(embed=dialogBox('gear', 'You don\'t have a wallet yet!', 'Creating one with a balance of **{amt}**...'.format(amt=asMoney(defaultWalletAmount))))
@@ -122,11 +139,12 @@ async def balance(ctx):
 			total_buyins = 0
 		)
 	dbUser = userInDatabase(ctx.author.id)
-	await ctx.send(embed=dialogBox('moneybag', '{name}\'s current wallet balance is {balance}'.format(name=dbUser.real_name, balance=asMoney(dbUser.wallet)), 'Happy betting!'))
+	await ctx.send(embed=dialogBox('moneybag', '{name}\'s current wallet balance is {balance}'.format(name=dbUser.real_name, balance=asMoney(dbUser.wallet))))
 
 # Open bets. Dealer only.
 @client.command()
 async def openbets(ctx):
+	'''DEALER ONLY. Opens the table for betting, allows users to place bets with $bet <amount>'''
 	global betsOpen
 	# Only execute if the message author is a dealer.
 	if isDealer(ctx.author):
@@ -152,6 +170,7 @@ async def openbets(ctx):
 # Close bets. Dealer only.
 @client.command()
 async def closebets(ctx):
+	'''DEALER ONLY. Closes the table for betting, barring players from placing bets with the $bet command'''
 	global betsOpen
 	# Only execute if the message author is a dealer.
 	if isDealer(ctx.author):
@@ -180,6 +199,7 @@ async def closebets(ctx):
 # Place a bet if the table is accepting them.
 @client.command()
 async def bet(ctx, betAmount):
+	'''If bets are open, places a bet of the specified amount.'''
 	global betsOpen
 	# await message.delete()
 	if betsOpen == True:
@@ -206,6 +226,7 @@ async def bet(ctx, betAmount):
 # Pays the user out a specific ratio of their original bet. Dealer only
 @client.command()
 async def pay(ctx, userMentionString, payoutRatio):
+	'''DEALER ONLY. Pays the @'ed user out. For example, `$pay @Jess 2x` will give Jess back $100 on a bet of $50. Ensure that the username after the @ is an actual mention (i.e. it pings the user).'''
 	# await message.delete()
 	if isDealer(ctx.author):
 		payDetails = {
@@ -229,6 +250,7 @@ async def pay(ctx, userMentionString, payoutRatio):
 # Pays the user out 2.5x. Dealer only
 @client.command()
 async def blackjack(ctx, userMentionString):
+	'''DEALER ONLY. An alias of $pay <user> 2.5x.'''
 	# await message.delete()
 	if isDealer(ctx.author):
 		payDetails = {
@@ -252,6 +274,7 @@ async def blackjack(ctx, userMentionString):
 # Pays the user out 0x (take their bet). Dealer only
 @client.command()
 async def bust(ctx, userMentionString):
+	'''DEALER ONLY. Takes a user's bet. An alias of $pay <user> 0x.'''
 	# await message.delete()
 	if isDealer(ctx.author):
 		payDetails = {
@@ -274,6 +297,7 @@ async def bust(ctx, userMentionString):
 # Pays the user out 1x (refund their bet). Dealer only
 @client.command()
 async def push(ctx, userMentionString):
+	'''DEALER ONLY. Refunds a user's bet in the event of a push. An alias of $pay <user> 1x.'''
 	# await message.delete()
 	if isDealer(ctx.author):
 		payDetails = {
@@ -294,16 +318,57 @@ async def push(ctx, userMentionString):
 	else:
 		await ctx.send(embed=dialogBox('error', 'Only the dealer has access to this command', 'messageContent'))
 
-# DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG  #
-@client.command()
-async def debug(ctx):
-	await ctx.send(embed=dialogBox('tick', 'Test message', 'messageContent `test`'))
+# View open/standing bets
+@client.command(aliases=['currentbets', 'standingbets'])
+async def unpaidbets(ctx):
+	'''Displays all bets that are yet to be paid out'''
+	if bool(currentBets) == True: # If bets exist in the bets table...
+		# await message.delete()
+		embedTitle = "The following bets have been made:"
+		standingBets = ''
+		for userID, betValue in currentBets.items():
+			standingBets +='  — **<@!{user}>\'s** bet of **{amount}**.\n'.format(user=userID, amount=asMoney(betValue))
+		await ctx.send(embed=dialogBox('waiting', embedTitle, standingBets))
+	else:
+		await ctx.send(embed=dialogBox('tick', 'No currently standing bets.'))
 
-# @client.command(aliases=['initdatabase','startdb'])
-# async def initdb(ctx):
-# 	await ctx.send('`Initialising database...`')
-# 	db.create_all()
-# 	await ctx.send('`Done! Check the console for any errors.`')
+# If a bet exists, double it.
+@client.command(aliases=['split', 'double'])
+async def doubledown(ctx):
+	'''Doubles your bet. Can be done at any time, even if bets are closed.'''
+	dbUser = userInDatabase(ctx.author.id)
+	#await message.delete()
+	if user_id not in currentBets:
+		await ctx.send(embed=dialogBox('warning', 'You haven\'t placed a bet.'))
+	elif currentBets[ctx.author.id] > dbUser.wallet:
+		await ctx.send(embed=dialogBox('warning', 'You\'re trying to double or split your bet, but you don\'t have enough in your wallet to do so.', 'Type `$balance` to see how much you have.'))
+	else:
+		dbUser.update(wallet=currentWalletAmount-currentBets[ctx.author.id])
+		currentBets[user_id] = currentBets[user_id] * 2
+		await message.channel.send(':dollar: **<@!{name}> has doubled their bet from ${originalAmount} to ${doubledAmount}!** They now have ${amtLeft} left in their wallet.'.format(name=user_id, originalAmount=currentBets[user_id]/2, doubledAmount=currentBets[user_id], amtLeft=wallets[user_id]))
+		await ctx.send(embed=dialogBox(
+			'dollar', '<@!{name}> has doubled their bet from ${originalAmount} to ${doubledAmount}!'.format(
+				name=ctx.author.id,
+				originalAmount=currentBets[ctx.author.id]/2,
+				doubledAmount=currentBets[ctx.author.id]
+			),
+			'They now have ${amtLeft} left in their wallet.'.format(
+				amtLeft=wallets[ctx.author.id]
+			)
+		))
+
+# Show the strategy chart
+@client.command(aliases=['strat', 'strategy', 'chart', 'basicstrategy'], hidden=True)
+async def strats(ctx):
+	'''Shows the basic Blackjack strategy chart'''
+	await message.channel.send('https://cdn.discordapp.com/attachments/734766427583676479/734767587157868664/BJA_Basic_Strategy.png')
+	# await message.delete()
+
+# DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG  #
+@client.command(hidden=True)
+async def debug(ctx):
+	'''A command used for debugging randomg things. If this made it to live, yell at Jess for me.'''
+	await ctx.send(embed=dialogBox('tick', 'Test message', 'messageContent `test`'))
 
 # -------------------------------------------------------------------------------------------- #
 
