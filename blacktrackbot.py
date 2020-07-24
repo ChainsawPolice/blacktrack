@@ -17,6 +17,7 @@ deleteUserMessages = False
 uiEmoji = {
 	'tick'       : [':white_check_mark:', discord.Colour.green()],
 	'dollar'     : [':dollar:', discord.Colour.green()],
+	'handshake'  : [':handshake:', discord.Colour.green()],
 
 	'gear'       : [':gear:', discord.Colour.lighter_grey()],
 
@@ -225,7 +226,11 @@ async def bet(ctx, betAmount):
 		if dbUser == False:
 			await ctx.send(embed=dialogBox('warning', 'You don\'t have a wallet yet!', 'Type `$balance` to create one.'))
 		elif ctx.author.id in currentBets:
-			await ctx.send(embed=dialogBox('warning', 'You\'ve already placed a bet!', 'message'))
+			dbUser = userInDatabase(ctx.author.id)
+			dbUser.update(wallet=dbUser.wallet+currentBets[ctx.author.id]) # Refund the first bet.
+			dbUser.update(wallet=dbUser.wallet-betAmount) # Refund the first bet.
+			currentBets[ctx.author.id] = betAmount
+			await ctx.send(embed=dialogBox('dollar', '{name} has changed their bet to {amount}!'.format(name=dbUser.real_name, amount=asMoney(betAmount)), 'They now have **{amtLeft}** left in their wallet.'.format(amtLeft=asMoney(dbUser.wallet))))
 		elif int(betAmount) > dbUser.wallet:
 			await ctx.send(embed=dialogBox('warning', 'You\'re trying to bet more money than you have in your wallet!', 'Type `$balance` to see how much you have.'))
 		# elif int(betAmount) % 10 != 0:
@@ -405,6 +410,23 @@ async def strats(ctx):
 		await ctx.message.delete()
 
 	await message.channel.send('https://cdn.discordapp.com/attachments/734766427583676479/734767587157868664/BJA_Basic_Strategy.png')
+
+# Allows the dealer to buy-in a user.
+@client.command()
+async def buyin(ctx, userMentionString):
+	'''DEALER ONLY. Adds $100 to a user's wallet.'''
+	if deleteUserMessages == True:
+		await ctx.message.delete()
+	if isDealer(ctx.author):
+		dbUser = userInDatabase(userMentionString[3:-1])
+		dbUser.update(wallet=dbUser.wallet+float(100))
+		dbUser.update(total_buyins=dbUser.total_buyins+1)
+		await ctx.send(embed=dialogBox(
+			'handshake', '{} has bought in!'.format(dbUser.real_name),
+			'The dealer has topped up {name}\'s wallet with an extra **$100**, bringing their funds up to **{amt}**.'.format(name=dbUser.real_name, amt=asMoney(dbUser.wallet))
+		))
+	else:
+		await ctx.send(embed=dialogBox('error', 'Only the dealer has access to this command', 'messageContent'))
 
 @client.command()
 async def initdb(ctx):
