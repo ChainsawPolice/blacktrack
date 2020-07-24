@@ -4,6 +4,10 @@ This bot does not play blackjack; it simply tracks bets for the purpose of the c
 
 ## Changelog
 
+### v0.2.3
+* The previous bug wasn't actually fixed. Fixed and tested to confirm.
+* Fixed a bug where `$balance` wouldn't work sometimes due to the message being deleted too soon.
+
 ### v0.2.2
 * Fixed a bug in which creating a new wallet failed _(wallet value was int, not float)_.
 
