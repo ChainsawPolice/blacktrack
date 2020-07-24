@@ -1,6 +1,9 @@
 # Discord bot token
 blacktrack_token.py
 
+# Local database
+blacktrack.db
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
