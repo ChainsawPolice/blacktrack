@@ -428,6 +428,21 @@ async def buyin(ctx, userMentionString):
 	else:
 		await ctx.send(embed=dialogBox('error', 'Only the dealer has access to this command', 'messageContent'))
 
+# @client.command()
+# async def initdb(ctx):
+# 	if deleteUserMessages == True:
+# 		await ctx.message.delete()
+# 	await ctx.send(embed=debugMessage('Creating tables...'))
+# 	db.create_all()
+# 	await ctx.send(embed=debugMessage('Database initialised!'))
+
+@client.command()
+async def getemoji(ctx):
+	emojilist = []
+	for emoji in ctx.guild.emojis:
+		emojilist.append('{name} ({id})'.format(name=emoji.id, id=emoji.name))
+	await ctx.send(embed=debugMessage(json.dumps(emojilist,indent=4)))
+
 # -------------------------------------------------------------------------------------------- #
 
 client.run(blacktrack_token.botToken())
