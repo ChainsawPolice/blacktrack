@@ -76,7 +76,7 @@ def debugMessage(msg):
 
 # Work smarter, not harder.
 def asMoney(value):
-	if value.is_integer():
+	if float(value).is_integer():
 		return "${:,.0f}".format(value)
 	else:
 		return "${:,.2f}".format(value)
@@ -129,9 +129,6 @@ async def on_ready():
 @client.command()
 async def balance(ctx):
 	'''Shows your current wallet balance. Creates a wallet for you if you do not have one.'''
-	if deleteUserMessages == True:
-		await ctx.message.delete()
-
 	if userInDatabase(ctx.author.id) == False: # If user not found found in database, create a wallet for them.
 		await ctx.send(embed=dialogBox('gear', 'You don\'t have a wallet yet!', 'Creating one with a balance of **{amt}**...'.format(amt=asMoney(defaultWalletAmount))))
 		User.create(
@@ -146,6 +143,8 @@ async def balance(ctx):
 		)
 	dbUser = userInDatabase(ctx.author.id)
 	await ctx.send(embed=dialogBox('moneybag', '{name}\'s current wallet balance is {balance}'.format(name=dbUser.real_name, balance=asMoney(dbUser.wallet))))
+	if deleteUserMessages == True:
+		await ctx.message.delete()
 
 # Open bets. Dealer only.
 @client.command()
