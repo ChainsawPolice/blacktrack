@@ -13,6 +13,7 @@ wallets = {}
 currentBets = {} # A dict containing user IDs and their corresponding bet.
 betsOpen = False # Whether or not the table is accepting new bets.
 channeltoWatch = 735381840835379259
+deleteUserMessages = True
 uiEmoji = {
 	'tick'       : [':white_check_mark:', discord.Colour.green()],
 	'dollar'     : [':dollar:', discord.Colour.green()],
@@ -75,7 +76,10 @@ def debugMessage(msg):
 
 # Work smarter, not harder.
 def asMoney(value):
-	return "${:,.2f}".format(value)
+	if value.is_integer():
+		return "${:,.0f}".format(value)
+	else:
+		return "${:,.2f}".format(value)
 
 # Pay out a user
 def payUserOut(ctx,userMentionString, payoutRatio,winState):
@@ -125,7 +129,9 @@ async def on_ready():
 @client.command()
 async def balance(ctx):
 	'''Shows your current wallet balance. Creates a wallet for you if you do not have one.'''
-	# await message.delete()
+	if deleteUserMessages == True:
+		await ctx.message.delete()
+
 	if userInDatabase(ctx.author.id) == False: # If user not found found in database, create a wallet for them.
 		await ctx.send(embed=dialogBox('gear', 'You don\'t have a wallet yet!', 'Creating one with a balance of **{amt}**...'.format(amt=asMoney(defaultWalletAmount))))
 		User.create(
@@ -148,11 +154,11 @@ async def openbets(ctx):
 	global betsOpen
 	# Only execute if the message author is a dealer.
 	if isDealer(ctx.author):
-		# # Delete all messages in chat
-		# messages = []
-		# async for message in ctx.channel.history(limit=int(100)):
-		# 	messages.append(message)
-		# await message.channel.delete_messages(messages)
+		# Delete all messages in chat
+		messages = []
+		async for message in ctx.channel.history(limit=int(100)):
+			messages.append(message)
+		await message.channel.delete_messages(messages)
 
 		# If there are bets existing...
 		if bool(currentBets) == True:
@@ -172,9 +178,11 @@ async def openbets(ctx):
 async def closebets(ctx):
 	'''DEALER ONLY. Closes the table for betting, barring players from placing bets with the $bet command'''
 	global betsOpen
+	if deleteUserMessages == True:
+		await ctx.message.delete()
+
 	# Only execute if the message author is a dealer.
 	if isDealer(ctx.author):
-		# await message.delete()
 		# If bets are closed...
 		if not betsOpen:
 			await ctx.send(embed=dialogBox('warning', 'Bets aren\'t open yet', 'Open them with `$openbets`.'))
@@ -201,7 +209,9 @@ async def closebets(ctx):
 async def bet(ctx, betAmount):
 	'''If bets are open, places a bet of the specified amount.'''
 	global betsOpen
-	# await message.delete()
+	if deleteUserMessages == True:
+		await ctx.message.delete()
+
 	if betsOpen == True:
 		betAmount = float(betAmount.strip('$')) # Sanitise input.
 
@@ -227,7 +237,9 @@ async def bet(ctx, betAmount):
 @client.command()
 async def pay(ctx, userMentionString, payoutRatio):
 	'''DEALER ONLY. Pays the @'ed user out. For example, `$pay @Jess 2x` will give Jess back $100 on a bet of $50. Ensure that the username after the @ is an actual mention (i.e. it pings the user).'''
-	# await message.delete()
+	if deleteUserMessages == True:
+		await ctx.message.delete()
+
 	if isDealer(ctx.author):
 		payDetails = {
 			'user' 	: int(userMentionString[3:-1]),
@@ -251,7 +263,9 @@ async def pay(ctx, userMentionString, payoutRatio):
 @client.command()
 async def blackjack(ctx, userMentionString):
 	'''DEALER ONLY. An alias of $pay <user> 2.5x.'''
-	# await message.delete()
+	if deleteUserMessages == True:
+		await ctx.message.delete()
+
 	if isDealer(ctx.author):
 		payDetails = {
 			'user' 	: int(userMentionString[3:-1]),
@@ -275,7 +289,9 @@ async def blackjack(ctx, userMentionString):
 @client.command()
 async def bust(ctx, userMentionString):
 	'''DEALER ONLY. Takes a user's bet. An alias of $pay <user> 0x.'''
-	# await message.delete()
+	if deleteUserMessages == True:
+		await ctx.message.delete()
+
 	if isDealer(ctx.author):
 		payDetails = {
 			'user' 	: int(userMentionString[3:-1]),
@@ -298,7 +314,9 @@ async def bust(ctx, userMentionString):
 @client.command()
 async def push(ctx, userMentionString):
 	'''DEALER ONLY. Refunds a user's bet in the event of a push. An alias of $pay <user> 1x.'''
-	# await message.delete()
+	if deleteUserMessages == True:
+		await ctx.message.delete()
+
 	if isDealer(ctx.author):
 		payDetails = {
 			'user' 	: int(userMentionString[3:-1]),
@@ -322,8 +340,10 @@ async def push(ctx, userMentionString):
 @client.command(aliases=['currentbets', 'standingbets'])
 async def unpaidbets(ctx):
 	'''Displays all bets that are yet to be paid out'''
+	if deleteUserMessages == True:
+		await ctx.message.delete()
+
 	if bool(currentBets) == True: # If bets exist in the bets table...
-		# await message.delete()
 		embedTitle = "The following bets have been made:"
 		standingBets = ''
 		for userID, betValue in currentBets.items():
@@ -336,6 +356,9 @@ async def unpaidbets(ctx):
 @client.command(aliases=['split', 'double'])
 async def doubledown(ctx):
 	'''Doubles your bet. Can be done at any time, even if bets are closed.'''
+	if deleteUserMessages == True:
+		await ctx.message.delete()
+
 	dbUser = userInDatabase(ctx.author.id)
 	#await message.delete()
 	if user_id not in currentBets:
@@ -358,17 +381,24 @@ async def doubledown(ctx):
 		))
 
 # Show the strategy chart
-@client.command(aliases=['strat', 'strategy', 'chart', 'basicstrategy'], hidden=True)
+@client.command(aliases=['strat', 'strategy', 'chart', 'basicstrategy'])
 async def strats(ctx):
 	'''Shows the basic Blackjack strategy chart'''
+	if deleteUserMessages == True:
+		await ctx.message.delete()
+
 	await message.channel.send('https://cdn.discordapp.com/attachments/734766427583676479/734767587157868664/BJA_Basic_Strategy.png')
-	# await message.delete()
+
 
 # DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG  #
 @client.command(hidden=True)
 async def debug(ctx):
 	'''A command used for debugging randomg things. If this made it to live, yell at Jess for me.'''
-	await ctx.send(embed=dialogBox('tick', 'Test message', 'messageContent `test`'))
+	if deleteUserMessages == True:
+		await ctx.message.delete()
+
+	await ctx.send(embed=debugMessage('{0} -> {1}'.format(10.00, asMoney(10.00))))
+	await ctx.send(embed=debugMessage('{0} -> {1}'.format(2.50, asMoney(2.50))))
 
 # -------------------------------------------------------------------------------------------- #
 
