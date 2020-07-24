@@ -13,7 +13,7 @@ wallets = {}
 currentBets = {} # A dict containing user IDs and their corresponding bet.
 betsOpen = False # Whether or not the table is accepting new bets.
 channeltoWatch = 735381840835379259
-deleteUserMessages = True
+deleteUserMessages = False
 uiEmoji = {
 	'tick'       : [':white_check_mark:', discord.Colour.green()],
 	'dollar'     : [':dollar:', discord.Colour.green()],
@@ -33,6 +33,25 @@ uiEmoji = {
 	'raisedhand' : [':raised_hand:', discord.Colour.red()],
 }
 defaultWalletAmount = float(200)
+
+# -------------------------------------------------------------------------------------------- #
+# Set up database connection
+db = ActiveAlchemy('sqlite:///blacktrack.db')
+class User(db.Model):
+	dc_uniqueid      = db.Column(db.String(100))
+	dc_username      = db.Column(db.String(100))
+	real_name        = db.Column(db.String(100))
+	wallet           = db.Column(db.Integer, default=defaultWalletAmount)
+	total_bets       = db.Column(db.Integer, default=0)
+	total_wins       = db.Column(db.Integer, default=0)
+	total_losses     = db.Column(db.Integer, default=0)
+	total_buyins     = db.Column(db.Integer, default=0)
+	total_winnings   = db.Column(db.Integer, default=0)
+
+class Bets(db.Model):
+	bet_user_id = db.Column(db.String(25))
+	bet_amount = db.Column(db.Integer)
+# -------------------------------------------------------------------------------------------- #
 
 # -------------------------------------------------------------------------------------------- #
 #Useful functions
@@ -82,39 +101,32 @@ def asMoney(value):
 		return "${:,.2f}".format(value)
 
 # Pay out a user
-def payUserOut(ctx,userMentionString, payoutRatio,winState):
+def payUserOut(ctx,userMentionString, payoutRatio,winState='push'):
 	dbUser = userInDatabase(ctx.author.id)
 
 	if userMentionString not in currentBets:
 		return dialogBox('warning', 'No bets currently standing for {user}.', 'They may have not placed a bet, or the dealer ay have already paid them out.'.format(user=dbUser.real_name))
 	else:
 		payAmount = float(currentBets[userMentionString] * payoutRatio) # Calculate pay-out amount (current bet * pay-out ratio).
-		del currentBets[userMentionString]                                      # Remove the user's bet from the in-memory bets table.
-		currentWalletAmount = dbUser.wallet                                      # Cache the wallet balance pre-winnings.
-		dbUser.update(wallet=currentWalletAmount+float(payAmount))               # Add the money to the user's wallet in the database.
+		currentWalletAmount = dbUser.wallet                             # Cache the wallet balance pre-winnings.
+		dbUser.update(wallet=currentWalletAmount+float(payAmount))      # Add the money to the user's wallet in the database.
+
+		# Add the win/loss to the user's record in the database.
+		if winState == 'win':
+			dbUser.update(total_wins=dbUser.total_wins+1)
+			dbUser.update(total_winnings=dbUser.total_winnings+(payAmount-currentBets[userMentionString]))
+		elif winState == 'loss':
+			dbUser.update(total_losses=dbUser.total_losses+1)
+			dbUser.update(total_winnings=dbUser.total_winnings-(currentBets[userMentionString]))
+
+		# Remove the user's bet from the in-memory bets table.
+		del currentBets[userMentionString]
+
 		return {
 			'userWhoGotPaid' : dbUser,
 			'payOutTotal'    : payAmount
 		}
 
-# -------------------------------------------------------------------------------------------- #
-
-# -------------------------------------------------------------------------------------------- #
-# Set up database connection
-db = ActiveAlchemy('sqlite:///blacktrack.db')
-class User(db.Model):
-	dc_uniqueid  = db.Column(db.String(100))
-	dc_username  = db.Column(db.String(100))
-	real_name    = db.Column(db.String(100))
-	wallet       = db.Column(db.Integer)
-	total_bets   = db.Column(db.Integer)
-	total_wins   = db.Column(db.Integer)
-	total_losses = db.Column(db.Integer)
-	total_buyins = db.Column(db.Integer)
-
-class Bets(db.Model):
-	bet_user_id = db.Column(db.String(25))
-	bet_amount = db.Column(db.Integer)
 # -------------------------------------------------------------------------------------------- #
 
 # -------------------------------------------------------------------------------------------- #
@@ -135,11 +147,6 @@ async def balance(ctx):
 			dc_uniqueid  = ctx.author.id,
 			dc_username  = ctx.author.name,
 			real_name    = ctx.author.display_name,
-			wallet       = defaultWalletAmount,
-			total_bets   = 0,
-			total_wins   = 0,
-			total_losses = 0,
-			total_buyins = 0
 		)
 	dbUser = userInDatabase(ctx.author.id)
 	await ctx.send(embed=dialogBox('moneybag', '{name}\'s current wallet balance is {balance}'.format(name=dbUser.real_name, balance=asMoney(dbUser.wallet))))
@@ -165,10 +172,11 @@ async def openbets(ctx):
 		# If bets are already open...
 		elif betsOpen:
 			await ctx.send(embed=dialogBox('warning', 'Bets are already open', 'Close them with `$closebets`.'))
-		# If bets aren't open and there aren't any existing bets, then open bets.
+			# If bets aren't open and there aren't any existing bets, then open bets.
 		else:
 			betsOpen = True
 			await ctx.send(embed=dialogBox('tick', 'Bets are now open!', 'Place your bets with `$bet <number>` (e.g. `$bet 50`)'))
+
 	else:
 		await ctx.send(embed=dialogBox('error', 'Only the dealer has access to this command', 'messageContent'))
 
@@ -213,12 +221,12 @@ async def bet(ctx, betAmount):
 
 	if betsOpen == True:
 		betAmount = float(betAmount.strip('$')) # Sanitise input.
-
-		if userInDatabase(ctx.author.id) == False:
+		dbUser = userInDatabase(ctx.author.id)
+		if dbUser == False:
 			await ctx.send(embed=dialogBox('warning', 'You don\'t have a wallet yet!', 'Type `$balance` to create one.'))
 		elif ctx.author.id in currentBets:
 			await ctx.send(embed=dialogBox('warning', 'You\'ve already placed a bet!', 'message'))
-		elif int(betAmount) > userInDatabase(ctx.author.id).wallet:
+		elif int(betAmount) > dbUser.wallet:
 			await ctx.send(embed=dialogBox('warning', 'You\'re trying to bet more money than you have in your wallet!', 'Type `$balance` to see how much you have.'))
 		# elif int(betAmount) % 10 != 0:
 		# 	await ctx.send(embed=dialogBox('gear', 'Please only bet in multiples of 10, sorry!', 'Jess is lazy and forgot to account for decimal points in the code. This is going to be fixed in a later update.'))
@@ -227,6 +235,10 @@ async def bet(ctx, betAmount):
 			currentBets[ctx.author.id] = betAmount              # Add their bet to the in-memory table of bets.
 			currentWalletAmount = dbUser.wallet                 # Get the user's current wallet amount from the database.
 			dbUser.update(wallet=currentWalletAmount-betAmount) # Take the bet from the user's wallet.
+
+			# Log statistics
+			dbUser.update(total_bets=dbUser.total_bets+1)
+			Bets.create(bet_user_id=ctx.author.id, bet_amount=betAmount)
 
 			await ctx.send(embed=dialogBox('dollar', '{name} has bet {amount}!'.format(name=dbUser.real_name, amount=asMoney(betAmount)), 'They now have **{amtLeft}** left in their wallet.'.format(amtLeft=asMoney(dbUser.wallet))))
 	else:
@@ -244,7 +256,13 @@ async def pay(ctx, userMentionString, payoutRatio):
 			'user' 	: int(userMentionString[3:-1]),
 			'ratio' : float(payoutRatio.strip('x'))
 		}
-		payoutResponse = payUserOut(ctx,payDetails['user'],payDetails['ratio'],'win')
+
+		if payDetails['ratio'] >= 1:
+			userWinState = 'win'
+		elif payDetails['ratio'] < 1:
+			userWinState = 'loss'
+
+		payoutResponse = payUserOut(ctx,payDetails['user'],payDetails['ratio'],userWinState)
 		finaldialog = dialogBox(
 			'winner',
 			'{user} wins!'.format(user=payoutResponse['userWhoGotPaid'].real_name),
@@ -296,7 +314,7 @@ async def bust(ctx, userMentionString):
 			'user' 	: int(userMentionString[3:-1]),
 			'ratio' : 0
 		}
-		payoutResponse = payUserOut(ctx,payDetails['user'],payDetails['ratio'],'win')
+		payoutResponse = payUserOut(ctx,payDetails['user'],payDetails['ratio'],'loss')
 		finaldialog = dialogBox(
 			'loser',
 			'{user} loses!'.format(user=payoutResponse['userWhoGotPaid'].real_name),
@@ -321,7 +339,7 @@ async def push(ctx, userMentionString):
 			'user' 	: int(userMentionString[3:-1]),
 			'ratio' : 1
 		}
-		payoutResponse = payUserOut(ctx,payDetails['user'],payDetails['ratio'],'win')
+		payoutResponse = payUserOut(ctx,payDetails['user'],payDetails['ratio'],'push')
 		finaldialog = dialogBox(
 			'push',
 			'{user} pushes!'.format(user=payoutResponse['userWhoGotPaid'].real_name),
@@ -388,6 +406,15 @@ async def strats(ctx):
 
 	await message.channel.send('https://cdn.discordapp.com/attachments/734766427583676479/734767587157868664/BJA_Basic_Strategy.png')
 
+@client.command()
+async def initdb(ctx):
+	if deleteUserMessages == True:
+		await ctx.message.delete()
+	await ctx.send(embed=debugMessage('Creating tables...'))
+	db.create_all()
+	await ctx.send(embed=debugMessage('Database initialised!'))
+
 # -------------------------------------------------------------------------------------------- #
 
 client.run(blacktrack_token.botToken())
+# 83333350588157952

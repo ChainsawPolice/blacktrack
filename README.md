@@ -4,6 +4,14 @@ This bot does not play blackjack; it simply tracks bets for the purpose of the c
 
 ## Changelog
 
+### v0.2.4
+#### Functionality
+
+
+#### Code
+* Cleaned up database model.
+* The bot will now log all bets to the database for lifetime statistics tracking. A command to check these stats will be coming shortly.
+
 ### v0.2.3
 * The previous bug wasn't actually fixed. Fixed and tested to confirm.
 * Fixed a bug where `$balance` wouldn't work sometimes due to the message being deleted too soon.
@@ -36,14 +44,12 @@ This bot does not play blackjack; it simply tracks bets for the purpose of the c
 
 ## To do
 #### Functionality
-* Log all bets to the database for lifetime statistics tracking.
 * Add an option to buy in _(e.g. when a user zeroes out their wallet)_.
 * Add an option to change already-placed bets while the table is still open.
 * Add avatar thumbnails into the win/loss messages _(tried this before, but the relatively-hacky approach I tried never made it out of testing in v0.2.0)_.
-* Make bot delete messages.
 
 #### Code
 * Clean up the god-forgotten mess of sellotaped-together code in `userInDatabase`. Seriously, that function is a mess to look at, even though it works.
 * Shorten `isDealer()`.
 * Have the bot only watch a certain channel or channels so as to avoid destructive or disruptive behaviour in other channels.
-* Move to SQLALchemy instead of using ActiveAlchemy
+* Move to SQLALchemy instead of using ActiveAlchemy (?).
