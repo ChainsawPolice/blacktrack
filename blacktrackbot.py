@@ -389,17 +389,6 @@ async def strats(ctx):
 
 	await message.channel.send('https://cdn.discordapp.com/attachments/734766427583676479/734767587157868664/BJA_Basic_Strategy.png')
 
-
-# DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG DEBUG  #
-@client.command(hidden=True)
-async def debug(ctx):
-	'''A command used for debugging randomg things. If this made it to live, yell at Jess for me.'''
-	if deleteUserMessages == True:
-		await ctx.message.delete()
-
-	await ctx.send(embed=debugMessage('{0} -> {1}'.format(10.00, asMoney(10.00))))
-	await ctx.send(embed=debugMessage('{0} -> {1}'.format(2.50, asMoney(2.50))))
-
 # -------------------------------------------------------------------------------------------- #
 
 client.run(blacktrack_token.botToken())
