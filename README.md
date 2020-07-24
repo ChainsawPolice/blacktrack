@@ -4,12 +4,15 @@ This bot does not play blackjack; it simply tracks bets for the purpose of the c
 
 ## Changelog
 
-### v0.2.1 (in dev)
+### v0.2.2
+* Fixed a bug in which creating a new wallet failed _(wallet value was int, not float)_.
+
+### v0.2.1
 * Commands will now be deleted once executed _(back to v0.1.0 functionality)_.
 * Fixed the bug/oversight where the `$strats` command was not being shown in the `$help` list.
 * Whole-dollar money amounts _(i.e. those that do not include cents)_ will now truncate the ".00" from the end.
 
-### v0.2.0 (live)
+### v0.2.0
 #### Functionality
 * Users may now bet any amount of money, including non-even amounts and amounts that include cents/decimal places.
 * Wallets and other statistics are now saved to a database rather than being stored in memory. Wallet data will be remembered forever if the bot goes offline _(i.e. between updates/crashes)_.
@@ -39,3 +42,4 @@ This bot does not play blackjack; it simply tracks bets for the purpose of the c
 * Clean up the god-forgotten mess of sellotaped-together code in `userInDatabase`. Seriously, that function is a mess to look at, even though it works.
 * Shorten `isDealer()`.
 * Have the bot only watch a certain channel or channels so as to avoid destructive or disruptive behaviour in other channels.
+* Move to SQLALchemy instead of using ActiveAlchemy

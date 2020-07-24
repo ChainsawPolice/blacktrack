@@ -32,7 +32,7 @@ uiEmoji = {
 	'error'      : [':no_entry:', discord.Colour.red()],
 	'raisedhand' : [':raised_hand:', discord.Colour.red()],
 }
-defaultWalletAmount = 200
+defaultWalletAmount = float(200)
 
 # -------------------------------------------------------------------------------------------- #
 #Useful functions
