@@ -270,7 +270,7 @@ async def pay(ctx, userMentionString, payoutRatio):
 		payoutResponse = payUserOut(ctx,payDetails['user'],payDetails['ratio'],userWinState)
 		finaldialog = dialogBox(
 			'winner',
-			'{user} wins!'.format(user=payoutResponse['userWhoGotPaid'].real_name),
+			'{user} wins!'.format(user=payoutResponse['userWhoGotPaid'].display_name),
 			'The house has paid <@!{userID}> a total of **{amount}**, and their wallet balance is now **{balance}**.'.format(
 				userID=payoutResponse['userWhoGotPaid'].dc_uniqueid,
 				amount=asMoney(payoutResponse['payOutTotal']),
@@ -427,6 +427,21 @@ async def buyin(ctx, userMentionString):
 		))
 	else:
 		await ctx.send(embed=dialogBox('error', 'Only the dealer has access to this command', 'messageContent'))
+
+# @client.command()
+# async def initdb(ctx):
+# 	if deleteUserMessages == True:
+# 		await ctx.message.delete()
+# 	await ctx.send(embed=debugMessage('Creating tables...'))
+# 	db.create_all()
+# 	await ctx.send(embed=debugMessage('Database initialised!'))
+
+@client.command()
+async def getemoji(ctx):
+	emojilist = []
+	for emoji in ctx.guild.emojis:
+		emojilist.append('{name} ({id})'.format(name=emoji.id, id=emoji.name))
+	await ctx.send(embed=debugMessage(json.dumps(emojilist,indent=4)))
 
 # -------------------------------------------------------------------------------------------- #
 

@@ -31,6 +31,7 @@ This bot does not play blackjack; it simply tracks bets for the purpose of the c
 ## To do
 #### Functionality
 * Add avatar thumbnails into the win/loss messages _(tried this before, but the relatively-hacky approach I tried never made it out of testing in v0.2.0)_.
+* Test if a plaintext @user has been submitted in $pay instead of a mention/tag.
 
 #### Code
 * Clean up the god-forgotten mess of sellotaped-together code in `userInDatabase`. Seriously, that function is a mess to look at, even though it works.
