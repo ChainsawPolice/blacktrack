@@ -270,7 +270,7 @@ async def pay(ctx, userMentionString, payoutRatio):
 		payoutResponse = payUserOut(ctx,payDetails['user'],payDetails['ratio'],userWinState)
 		finaldialog = dialogBox(
 			'winner',
-			'{user} wins!'.format(user=payoutResponse['userWhoGotPaid'].real_name),
+			'{user} wins!'.format(user=payoutResponse['userWhoGotPaid'].display_name),
 			'The house has paid <@!{userID}> a total of **{amount}**, and their wallet balance is now **{balance}**.'.format(
 				userID=payoutResponse['userWhoGotPaid'].dc_uniqueid,
 				amount=asMoney(payoutResponse['payOutTotal']),
