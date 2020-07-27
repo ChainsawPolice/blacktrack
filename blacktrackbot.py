@@ -342,8 +342,12 @@ async def buyin(ctx, userMentionString):
 		await ctx.send(embed=dialogBox('error', 'Only the dealer has access to this command.'))
 
 @client.command()
-async def avatars(ctx):
-	await ctx.channel.send(getAvatarURL(ctx,ctx.author.id))
+async def insurance(ctx):
+	await ctx.send(embed=debugMessage('Still working on this one...'))
+
+@client.command()
+async def stats(ctx):
+	await ctx.send(embed=debugMessage('Still working on this one...'))
 
 
 # -------------------------------------------------------------------------------------------- #

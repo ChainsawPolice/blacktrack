@@ -14,11 +14,9 @@ def asMoney(value):
 def isDealer(userObject):
 	listOfRoleIDs = []
 	for role in userObject.roles:
-		listOfRoleIDs.append(role.id)
-	if dealerRoleID in listOfRoleIDs:
-		return True
-	else:
-		return False
+		if role.id == dealerRoleID:
+			return True
+	return False
 
 # Get a user's avatar URL
 def getAvatarURL(ctx,userID):
@@ -26,6 +24,6 @@ def getAvatarURL(ctx,userID):
 		print(thisMember.id)
 		print(userID)
 		if int(thisMember.id) == int(userID):
-			return str(thisMember.avatar_url_as(format='png', static_format='png', size=1024))
+			return str(thisMember.avatar_url_as(format='png', static_format='png', size=1024)))
 	else:
 		return 'https://cdn.discordapp.com/avatars/735083076165828628/b45f1aa524c3c5c6638a4dfacfdf43d2.png?size=1024'
