@@ -2,36 +2,26 @@
 A bet tracker for webcam games of blackjack.
 This bot does not play blackjack; it simply tracks bets for the purpose of the cards being dealt via a webcam sharing session.
 
+
+
+
+
+
 ## Changelog
-
-### v0.3.4
-#### Bug fixes
-* Fixed a bug where $pay would pay out the dealer instead of the winner @'ed. Consequently, this would fail if the dealer isn't in the database.
-* Fixed a bug where pay-out messages would not show, yet the payment would still be registered to the database.
-
-### v0.3
+### v0.4
 #### Functionality
-* Users may now bet any amount of money, including non-even amounts and amounts that include cents/decimal places.
-* Wallets and other statistics are now saved to a database rather than being stored in memory. Wallet data will be remembered forever if the bot goes offline _(i.e. between updates/crashes)_.
-* Added an option to buy in. When a user zeroes out their wallet or simply wants more money, the dealer can run `$buyin @user`, tagging the user and adding $100 to their wallet
-* Users can now change their bets (so long as betting is still open) by re-running `$bet` with the new amount. this will refund their old bet and bet the new amount.
-* Changed a few of the interface emoji.
-* Changed most messages to embeds instead. this should look nicer and make the chat history easier to grok.
-* Bot will no longer delete messages. This will be added again in a later version.
-* `$closebets` now shows a list of bets that have been made for easy reference.
-* Whole-dollar money amounts _(i.e. those that do not include cents)_ will now truncate the ".00" from the end, looking a little nicer.
+* Payout messages now show the winnings only, not the entire amount paid out _(e.g. on a bet of $50, the win message now shows that the user won $50 instead of them being paid $100)_.
 
 #### Bug fixes
-* Fixed a bug where `$balance` wouldn't work sometimes due to the message being deleted too soon.
-* Fixed a bug in which creating a new wallet failed _(wallet value was int, not float)_.
-* Fixed the bug/oversight where the `$strats` command was not being shown in the `$help` list.
+* Finally fixed the `$doubleup` and `$split` command _(code was ported incorrectly from v0.2 to v0.3)_.
 
 #### Code
-* Cleaned up database model.
-* The bot will now log all bets to the database for lifetime statistics tracking. A command to check these stats will be coming shortly.
-* Whether or not command messages will be deleted is now handled by the `deleteUserMessages` variable. A command will be included shortly to toggle this while the bot is running.
-* Replaced the pile of `if` statements with `@client.command()` blocks, making readability and maintenance easier in the future. Nothing should change on the user end.
-* Using the internal (albeit less-pretty) `$help` command that comes baked into `commands.Bot()`.
+* Started slowly splitting the project into smaller, more easily-maintainable modules, starting with the code for the embed "dialog boxes".
+
+
+
+
+
 
 ## To do
 #### Functionality
@@ -39,7 +29,6 @@ This bot does not play blackjack; it simply tracks bets for the purpose of the c
 * Signal mistyped commands to the user.
 * Allow dealer to toggle command deletion.
 * Add `$stats` command.
-* Fix `$split` command.
 * Add Lex's command.
 * Add `$insurance` – like `$doubleup`, but make it 1.5x.
 <!-- * Test if a plaintext @user has been submitted in $pay instead of a mention/tag. -->
@@ -49,3 +38,4 @@ This bot does not play blackjack; it simply tracks bets for the purpose of the c
 * Shorten `isDealer()`.
 * Have the bot only watch a certain channel or channels so as to avoid destructive or disruptive behaviour in other channels.
 * Move to SQLALchemy instead of using ActiveAlchemy (?).
+* Separate main file into several smaller, more easily-maintainable modules.

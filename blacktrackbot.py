@@ -1,38 +1,19 @@
 import discord
-import json
-import pprint
-import blacktrack_token
 from discord.ext import commands
 from active_alchemy import ActiveAlchemy
+import blacktrack_token
+from common_utils import asMoney
+from uitools import dialogBox, debugMessage
 
 # Instantiate the bot's Discord session.
 client = commands.Bot(command_prefix='$')
 
 # Global variables and functions
-wallets = {}
-currentBets = {} # A dict containing user IDs and their corresponding bet.
-betsOpen = False # Whether or not the table is accepting new bets.
-channeltoWatch = 735381840835379259
+currentBets = {}
+betsOpen = False
+channeltoWatch = 735381840835379259 # Future functionality
+dealerRole = 735351625899573341
 deleteUserMessages = False
-uiEmoji = {
-	'tick'       : [':white_check_mark:', discord.Colour.green()],
-	'dollar'     : [':dollar:', discord.Colour.green()],
-	'handshake'  : [':handshake:', discord.Colour.green()],
-
-	'gear'       : [':gear:', discord.Colour.lighter_grey()],
-
-	'warning'    : [':warning:', discord.Colour.red()],
-	'moneybag'   : [':moneybag:', discord.Colour.gold()],
-	'waiting'    : [':hourglass:', discord.Colour.gold()],
-
-	'winner'	 : [':partying_face:', discord.Colour.blue()],
-	'loser'	     : [':pensive:', discord.Colour.blue()],
-	'push'	     : [':right_facing_fist:', discord.Colour.blue()],
-	'blackjack'	 : ['<:poggers:731761300509818882>', discord.Colour.blue()],
-
-	'error'      : [':no_entry:', discord.Colour.red()],
-	'raisedhand' : [':raised_hand:', discord.Colour.red()],
-}
 defaultWalletAmount = float(200)
 
 # -------------------------------------------------------------------------------------------- #
@@ -63,7 +44,7 @@ def isDealer(userObject):
 	listOfRoleIDs = []
 	for role in userObject.roles:
 		listOfRoleIDs.append(role.id)
-	if 735351625899573341 in listOfRoleIDs:
+	if dealerRole in listOfRoleIDs:
 		return True
 	else:
 		return False
@@ -71,38 +52,14 @@ def isDealer(userObject):
 # Run a query to see if a user exists in the database already. Returns the query object if found, False if not.
 # TODO: Clean up this god-forgotten mess of sellotaped-together code.
 def userInDatabase(userID):
+	'''Queries the database for the user. Returns False if they don't exist in the database yet.'''
 	for thisUser in User.query().order_by(User.updated_at.desc()).filter(User.dc_uniqueid == int(userID)):
 		return thisUser
 	return False
 
-# A wrapper for creating an dialog box-style embed message.
-def dialogBox(messageEmoji, messageTitle, messageContent=False, accentColour='inherit'):
-	if not messageContent:
-		embed = discord.Embed(
-			title = '{emoji}  {title}'.format(emoji=uiEmoji[messageEmoji][0], title=messageTitle),
-			colour = uiEmoji[messageEmoji][1]
-		)
-	else:
-		embed = discord.Embed(
-			title = '{emoji}  {title}'.format(emoji=uiEmoji[messageEmoji][0], title=messageTitle),
-			description = messageContent,
-			colour = uiEmoji[messageEmoji][1]
-		)
-	return embed
-
-# Makes debugging stuff quicker.
-def debugMessage(msg):
-	return dialogBox('gear', 'Debug output', '`{}`'.format(msg))
-
-# Work smarter, not harder.
-def asMoney(value):
-	if float(value).is_integer():
-		return "${:,.0f}".format(value)
-	else:
-		return "${:,.2f}".format(value)
-
 # Pay out a user
 def payUserOut(ctx,userMentionString, payoutRatio,winState='push'):
+	'''Takes the user's ID, pay-out ratio, and win-state. Pays out the user, tracks it in the database, then returns the user's name and pay-out amount.'''
 	dbUser = userInDatabase(userMentionString)
 
 	if userMentionString not in currentBets:
@@ -253,10 +210,8 @@ async def bet(ctx, betAmount):
 @client.command()
 async def pay(ctx, userMentionString, payoutRatio):
 	'''DEALER ONLY. Pays the @'ed user out. For example, `$pay @Jess 2x` will give Jess back $100 on a bet of $50. Ensure that the username after the @ is an actual mention (i.e. it pings the user).'''
-	if deleteUserMessages == True:
-		await ctx.message.delete()
-
 	if isDealer(ctx.author):
+		await ctx.message.delete()
 		payDetails = {
 			'user' 	: int(userMentionString[3:-1]),
 			'ratio' : float(payoutRatio.strip('x'))
@@ -285,10 +240,8 @@ async def pay(ctx, userMentionString, payoutRatio):
 @client.command()
 async def blackjack(ctx, userMentionString):
 	'''DEALER ONLY. An alias of $pay <user> 2.5x.'''
-	if deleteUserMessages == True:
-		await ctx.message.delete()
-
 	if isDealer(ctx.author):
+		await ctx.message.delete()
 		payDetails = {
 			'user' 	: int(userMentionString[3:-1]),
 			'ratio' : 2.5
@@ -311,10 +264,8 @@ async def blackjack(ctx, userMentionString):
 @client.command()
 async def bust(ctx, userMentionString):
 	'''DEALER ONLY. Takes a user's bet. An alias of $pay <user> 0x.'''
-	if deleteUserMessages == True:
-		await ctx.message.delete()
-
 	if isDealer(ctx.author):
+		await ctx.message.delete()
 		payDetails = {
 			'user' 	: int(userMentionString[3:-1]),
 			'ratio' : 0
@@ -336,10 +287,8 @@ async def bust(ctx, userMentionString):
 @client.command()
 async def push(ctx, userMentionString):
 	'''DEALER ONLY. Refunds a user's bet in the event of a push. An alias of $pay <user> 1x.'''
-	if deleteUserMessages == True:
-		await ctx.message.delete()
-
 	if isDealer(ctx.author):
+		await ctx.message.delete()
 		payDetails = {
 			'user' 	: int(userMentionString[3:-1]),
 			'ratio' : 1
@@ -416,9 +365,8 @@ async def strats(ctx):
 @client.command()
 async def buyin(ctx, userMentionString):
 	'''DEALER ONLY. Adds $100 to a user's wallet.'''
-	if deleteUserMessages == True:
-		await ctx.message.delete()
 	if isDealer(ctx.author):
+		await ctx.message.delete()
 		dbUser = userInDatabase(userMentionString[3:-1])
 		dbUser.update(wallet=dbUser.wallet+float(100))
 		dbUser.update(total_buyins=dbUser.total_buyins+1)
@@ -429,21 +377,6 @@ async def buyin(ctx, userMentionString):
 	else:
 		await ctx.send(embed=dialogBox('error', 'Only the dealer has access to this command', 'messageContent'))
 
-@client.event
-async def on_command_error(ctx, error):
-	await ctx.send(embed=dialogBox(
-		'error', 'An error has occurred.',
-		'`{}`'.format(error)
-	))
-
-@client.command()
-async def getemoji(ctx):
-	emojilist = []
-	for emoji in ctx.guild.emojis:
-		emojilist.append('{name} ({id})'.format(name=emoji.id, id=emoji.name))
-	await ctx.send(embed=debugMessage(json.dumps(emojilist,indent=4)))
-
 # -------------------------------------------------------------------------------------------- #
 
-client.run(blacktrack_token.botToken())
-# 83333350588157952
+client.run(blacktrack_token.botToken)
