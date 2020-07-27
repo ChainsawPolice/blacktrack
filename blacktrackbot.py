@@ -103,7 +103,7 @@ def asMoney(value):
 
 # Pay out a user
 def payUserOut(ctx,userMentionString, payoutRatio,winState='push'):
-	dbUser = userInDatabase(ctx.author.id)
+	dbUser = userInDatabase(userMentionString)
 
 	if userMentionString not in currentBets:
 		return dialogBox('warning', 'No bets currently standing for {user}.', 'They may have not placed a bet, or the dealer ay have already paid them out.'.format(user=dbUser.real_name))
