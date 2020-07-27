@@ -8,6 +8,7 @@ This bot does not play blackjack; it simply tracks bets for the purpose of the c
 #### Bug fixes
 * Fixed a bug where $pay would pay out the dealer instead of the winner @'ed. Consequently, this would fail if the dealer isn't in the database.
 * Fixed a bug where pay-out messages would not show, yet the payment would still be registered to the database.
+* Fixed a bug where the `$strats` command would do nothing.
 
 ### v0.3
 #### Functionality

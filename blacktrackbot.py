@@ -409,7 +409,7 @@ async def strats(ctx):
 	if deleteUserMessages == True:
 		await ctx.message.delete()
 
-	await message.channel.send('https://cdn.discordapp.com/attachments/734766427583676479/734767587157868664/BJA_Basic_Strategy.png')
+	await ctx.channel.send('https://cdn.discordapp.com/attachments/734766427583676479/734767587157868664/BJA_Basic_Strategy.png')
 
 # Allows the dealer to buy-in a user.
 @client.command()

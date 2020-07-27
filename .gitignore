@@ -2,7 +2,7 @@
 blacktrack_token.py
 
 # Local database
-blacktrack.db
+*.db
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
