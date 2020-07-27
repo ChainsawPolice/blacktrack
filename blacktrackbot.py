@@ -383,7 +383,7 @@ async def doubledown(ctx):
 
 	dbUser = userInDatabase(ctx.author.id)
 	#await message.delete()
-	if user_id not in currentBets:
+	if ctx.author.id not in currentBets:
 		await ctx.send(embed=dialogBox('warning', 'You haven\'t placed a bet.'))
 	elif currentBets[ctx.author.id] > dbUser.wallet:
 		await ctx.send(embed=dialogBox('warning', 'You\'re trying to double or split your bet, but you don\'t have enough in your wallet to do so.', 'Type `$balance` to see how much you have.'))
@@ -427,6 +427,10 @@ async def buyin(ctx, userMentionString):
 		))
 	else:
 		await ctx.send(embed=dialogBox('error', 'Only the dealer has access to this command', 'messageContent'))
+
+@bot.event
+async def on_command_error(ctx, error):
+    await ctx.send(f"An error occured: {str(error)}")
 
 # @client.command()
 # async def initdb(ctx):
