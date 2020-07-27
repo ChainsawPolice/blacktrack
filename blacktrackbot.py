@@ -1,89 +1,49 @@
 import discord
 from discord.ext import commands
-from active_alchemy import ActiveAlchemy
-import blacktrack_token
-from common_utils import asMoney
-from uitools import dialogBox, debugMessage
+
+from btmodules.blacktrack_token import botToken
+from btmodules.common_utils import asMoney, isDealer, getAvatarURL
+from btmodules.ui_tools import dialogBox, debugMessage
+from btmodules.db_utils import User, Bets, userInDatabase
+import btmodules.global_constants as global_constants
 
 # Instantiate the bot's Discord session.
 client = commands.Bot(command_prefix='$')
 
-# Global variables and functions
+# Global variables
 currentBets = {}
 betsOpen = False
-channeltoWatch = 735381840835379259 # Future functionality
-dealerRole = 735351625899573341
-deleteUserMessages = False
-defaultWalletAmount = float(200)
-
-# -------------------------------------------------------------------------------------------- #
-# Set up database connection
-db = ActiveAlchemy('sqlite:///blacktrack.db')
-class User(db.Model):
-	dc_uniqueid      = db.Column(db.String(100))
-	dc_username      = db.Column(db.String(100))
-	real_name        = db.Column(db.String(100))
-	wallet           = db.Column(db.Integer, default=defaultWalletAmount)
-	total_bets       = db.Column(db.Integer, default=0)
-	total_wins       = db.Column(db.Integer, default=0)
-	total_losses     = db.Column(db.Integer, default=0)
-	total_buyins     = db.Column(db.Integer, default=0)
-	total_winnings   = db.Column(db.Integer, default=0)
-
-class Bets(db.Model):
-	bet_user_id = db.Column(db.String(25))
-	bet_amount = db.Column(db.Integer)
-# -------------------------------------------------------------------------------------------- #
 
 # -------------------------------------------------------------------------------------------- #
 #Useful functions
 
-# Check if the user is a dealer.
-# TODO: Clean this up. there's definitely a way to shorten this - there _has_ to be.
-def isDealer(userObject):
-	listOfRoleIDs = []
-	for role in userObject.roles:
-		listOfRoleIDs.append(role.id)
-	if dealerRole in listOfRoleIDs:
-		return True
-	else:
-		return False
-
 # Run a query to see if a user exists in the database already. Returns the query object if found, False if not.
 # TODO: Clean up this god-forgotten mess of sellotaped-together code.
-def userInDatabase(userID):
-	'''Queries the database for the user. Returns False if they don't exist in the database yet.'''
-	for thisUser in User.query().order_by(User.updated_at.desc()).filter(User.dc_uniqueid == int(userID)):
-		return thisUser
-	return False
 
 # Pay out a user
-def payUserOut(ctx,userMentionString, payoutRatio,winState='push'):
+def payUserOut(ctx,userMention, payoutRatio,winState):
 	'''Takes the user's ID, pay-out ratio, and win-state. Pays out the user, tracks it in the database, then returns the user's name and pay-out amount.'''
-	dbUser = userInDatabase(userMentionString)
+	userID = int(userMention[3:-1]) # Chop of the first three chars and the last one.
+	dbUser = userInDatabase(userID)
 
-	if userMentionString not in currentBets:
-		return dialogBox('warning', 'No bets currently standing for {user}.', 'They may have not placed a bet, or the dealer ay have already paid them out.'.format(user=dbUser.real_name))
+	if userID not in currentBets:
+		return False
 	else:
-		payAmount = float(currentBets[userMentionString] * payoutRatio) # Calculate pay-out amount (current bet * pay-out ratio).
+		payAmount = float(currentBets[userID] * float(payoutRatio.strip('x'))) # Calculate pay-out amount (current bet * pay-out ratio).
 		currentWalletAmount = dbUser.wallet                             # Cache the wallet balance pre-winnings.
 		dbUser.update(wallet=currentWalletAmount+float(payAmount))      # Add the money to the user's wallet in the database.
 
 		# Add the win/loss to the user's record in the database.
-		if winState == 'win':
+		if winState == 'win' or winState == 'blackjack':
 			dbUser.update(total_wins=dbUser.total_wins+1)
-			dbUser.update(total_winnings=dbUser.total_winnings+(payAmount-currentBets[userMentionString]))
+			dbUser.update(total_winnings=dbUser.total_winnings+(payAmount-currentBets[userID]))
 		elif winState == 'loss':
 			dbUser.update(total_losses=dbUser.total_losses+1)
-			dbUser.update(total_winnings=dbUser.total_winnings-(currentBets[userMentionString]))
+			dbUser.update(total_winnings=dbUser.total_winnings-(currentBets[userID]))
 
 		# Remove the user's bet from the in-memory bets table.
-		del currentBets[userMentionString]
-
-		return {
-			'userWhoGotPaid' : dbUser,
-			'payOutTotal'    : payAmount
-		}
+		del currentBets[userID]
+		return payAmount
 
 # -------------------------------------------------------------------------------------------- #
 
@@ -100,7 +60,7 @@ async def on_ready():
 async def balance(ctx):
 	'''Shows your current wallet balance. Creates a wallet for you if you do not have one.'''
 	if userInDatabase(ctx.author.id) == False: # If user not found found in database, create a wallet for them.
-		await ctx.send(embed=dialogBox('gear', 'You don\'t have a wallet yet!', 'Creating one with a balance of **{amt}**...'.format(amt=asMoney(defaultWalletAmount))))
+		await ctx.send(embed=dialogBox('gear', 'You don\'t have a wallet yet!', 'Creating one with a balance of **{amt}**...'.format(amt=asMoney(global_constants.defaultWalletAmount))))
 		User.create(
 			dc_uniqueid  = ctx.author.id,
 			dc_username  = ctx.author.name,
@@ -108,7 +68,7 @@ async def balance(ctx):
 		)
 	dbUser = userInDatabase(ctx.author.id)
 	await ctx.send(embed=dialogBox('moneybag', '{name}\'s current wallet balance is {balance}'.format(name=dbUser.real_name, balance=asMoney(dbUser.wallet))))
-	if deleteUserMessages == True:
+	if global_constants.deleteUserMessages == True:
 		await ctx.message.delete()
 
 # Open bets. Dealer only.
@@ -136,14 +96,14 @@ async def openbets(ctx):
 			await ctx.send(embed=dialogBox('tick', 'Bets are now open!', 'Place your bets with `$bet <number>` (e.g. `$bet 50`)'))
 
 	else:
-		await ctx.send(embed=dialogBox('error', 'Only the dealer has access to this command', 'messageContent'))
+		await ctx.send(embed=dialogBox('error', 'Only the dealer has access to this command.'))
 
 # Close bets. Dealer only.
 @client.command()
 async def closebets(ctx):
 	'''DEALER ONLY. Closes the table for betting, barring players from placing bets with the $bet command'''
 	global betsOpen
-	if deleteUserMessages == True:
+	if global_constants.deleteDealerMessages == True:
 		await ctx.message.delete()
 
 	# Only execute if the message author is a dealer.
@@ -167,14 +127,14 @@ async def closebets(ctx):
 
 			await ctx.send(embed=dialogBox('raisedhand', 'Bets are now closed!', betString))
 	else:
-		await ctx.send(embed=dialogBox('error', 'Only the dealer has access to this command', 'messageContent'))
+		await ctx.send(embed=dialogBox('error', 'Only the dealer has access to this command.'))
 
 # Place a bet if the table is accepting them.
 @client.command()
 async def bet(ctx, betAmount):
 	'''If bets are open, places a bet of the specified amount.'''
 	global betsOpen
-	if deleteUserMessages == True:
+	if global_constants.deleteUserMessages == True:
 		await ctx.message.delete()
 
 	if betsOpen == True:
@@ -211,107 +171,110 @@ async def bet(ctx, betAmount):
 async def pay(ctx, userMentionString, payoutRatio):
 	'''DEALER ONLY. Pays the @'ed user out. For example, `$pay @Jess 2x` will give Jess back $100 on a bet of $50. Ensure that the username after the @ is an actual mention (i.e. it pings the user).'''
 	if isDealer(ctx.author):
-		await ctx.message.delete()
-		payDetails = {
-			'user' 	: int(userMentionString[3:-1]),
-			'ratio' : float(payoutRatio.strip('x'))
-		}
-
-		if payDetails['ratio'] >= 1:
-			userWinState = 'win'
-		elif payDetails['ratio'] < 1:
-			userWinState = 'loss'
-
-		payoutResponse = payUserOut(ctx,payDetails['user'],payDetails['ratio'],userWinState)
-		finaldialog = dialogBox(
-			'winner',
-			'{user} wins!'.format(user=payoutResponse['userWhoGotPaid'].real_name),
-			'The house has paid <@!{userID}> a total of **{amount}**, and their wallet balance is now **{balance}**.'.format(
-				userID=payoutResponse['userWhoGotPaid'].dc_uniqueid,
-				amount=asMoney(payoutResponse['payOutTotal']),
-				balance=asMoney(payoutResponse['userWhoGotPaid'].wallet)
+		if global_constants.deleteDealerMessages == True:
+			await ctx.message.delete()
+		dbUser = userInDatabase(int(userMentionString[3:-1]))
+		if int(userMentionString[3:-1]) not in currentBets:
+			dialogBox('warning', 'No bets currently standing for this user.', 'They may have not placed a bet, or the dealer ay have already paid them out.')
+		else:
+			payoutResponse = payUserOut(ctx,userMentionString,payoutRatio,'win')
+			finaldialog = dialogBox(
+				'winner',
+				'{user} wins!'.format(user=dbUser.real_name),
+				'The house has paid <@!{userID}> a total of **{amount}**, and their wallet balance is now **{balance}**.'.format(
+					userID=dbUser.dc_uniqueid,
+					amount=asMoney(payoutResponse),
+					balance=asMoney(dbUser.wallet)
+				)
 			)
-		)
-		await ctx.send(embed=finaldialog)
+			finaldialog.set_thumbnail(url=getAvatarURL(ctx,dbUser.dc_uniqueid))
+			await ctx.send(embed=finaldialog)
 	else:
-		await ctx.send(embed=dialogBox('error', 'Only the dealer has access to this command', 'messageContent'))
+		await ctx.send(embed=dialogBox('error', 'Only the dealer has access to this command.'))
 
 # Pays the user out 2.5x. Dealer only
 @client.command()
 async def blackjack(ctx, userMentionString):
 	'''DEALER ONLY. An alias of $pay <user> 2.5x.'''
 	if isDealer(ctx.author):
-		await ctx.message.delete()
-		payDetails = {
-			'user' 	: int(userMentionString[3:-1]),
-			'ratio' : 2.5
-		}
-		payoutResponse = payUserOut(ctx,payDetails['user'],payDetails['ratio'],'win')
-		finaldialog = dialogBox(
-			'blackjack',
-			'{user} got blackjack!'.format(user=payoutResponse['userWhoGotPaid'].real_name),
-			'The house has paid <@!{userID}> a total of **{amount}**, and their wallet balance is now **{balance}**.'.format(
-				userID=payoutResponse['userWhoGotPaid'].dc_uniqueid,
-				amount=asMoney(payoutResponse['payOutTotal']),
-				balance=asMoney(payoutResponse['userWhoGotPaid'].wallet)
+		if global_constants.deleteDealerMessages == True:
+			await ctx.message.delete()
+		dbUser = userInDatabase(int(userMentionString[3:-1]))
+		if int(userMentionString[3:-1]) not in currentBets:
+			dialogBox('warning', 'No bets currently standing for this user.', 'They may have not placed a bet, or the dealer ay have already paid them out.')
+		else:
+			payoutResponse = payUserOut(ctx,userMentionString,payoutRatio,'win')
+			finaldialog = dialogBox(
+				'blackjack',
+				'{user} got blackjack!'.format(user=payoutResponse['userWhoGotPaid'].real_name),
+				'The house has paid <@!{userID}> a total of **{amount}**, and their wallet balance is now **{balance}**.'.format(
+					userID=dbUser.dc_uniqueid,
+					amount=asMoney(payoutResponse),
+					balance=asMoney(dbUser.wallet)
+				)
 			)
-		)
-		await ctx.send(embed=finaldialog)
+			finaldialog.set_thumbnail(url=getAvatarURL(ctx,dbUser.dc_uniqueid))
+			await ctx.send(embed=finaldialog)
 	else:
-		await ctx.send(embed=dialogBox('error', 'Only the dealer has access to this command', 'messageContent'))
+		await ctx.send(embed=dialogBox('error', 'Only the dealer has access to this command.'))
 
 # Pays the user out 0x (take their bet). Dealer only
 @client.command()
 async def bust(ctx, userMentionString):
 	'''DEALER ONLY. Takes a user's bet. An alias of $pay <user> 0x.'''
 	if isDealer(ctx.author):
-		await ctx.message.delete()
-		payDetails = {
-			'user' 	: int(userMentionString[3:-1]),
-			'ratio' : 0
-		}
-		payoutResponse = payUserOut(ctx,payDetails['user'],payDetails['ratio'],'loss')
-		finaldialog = dialogBox(
-			'loser',
-			'{user} loses!'.format(user=payoutResponse['userWhoGotPaid'].real_name),
-			'The house has taken <@!{userID}>\'s bet, and their wallet balance is now **{balance}**.'.format(
-				userID=payoutResponse['userWhoGotPaid'].dc_uniqueid,
-				balance=asMoney(payoutResponse['userWhoGotPaid'].wallet)
+		if global_constants.deleteDealerMessages == True:
+			await ctx.message.delete()
+		dbUser = userInDatabase(int(userMentionString[3:-1]))
+		if int(userMentionString[3:-1]) not in currentBets:
+			dialogBox('warning', 'No bets currently standing for this user.', 'They may have not placed a bet, or the dealer ay have already paid them out.')
+		else:
+			payoutResponse = payUserOut(ctx,userMentionString,0,'win')
+			finaldialog = dialogBox(
+				'loser',
+				'{user} loses!'.format(user=payoutResponse['userWhoGotPaid'].real_name),
+				'The house has taken <@!{userID}>\'s bet, and their wallet balance is now **{balance}**.'.format(
+					userID=dbUser.dc_uniqueid,
+					amount=asMoney(payoutResponse),
+					balance=asMoney(dbUser.wallet)
+				)
 			)
-		)
-		await ctx.send(embed=finaldialog)
+			finaldialog.set_thumbnail(url=getAvatarURL(ctx,dbUser.dc_uniqueid))
+			await ctx.send(embed=finaldialog)
 	else:
-		await ctx.send(embed=dialogBox('error', 'Only the dealer has access to this command.', 'messageContent'))
+		await ctx.send(embed=dialogBox('error', 'Only the dealer has access to this command.'))
 
 # Pays the user out 1x (refund their bet). Dealer only
 @client.command()
 async def push(ctx, userMentionString):
 	'''DEALER ONLY. Refunds a user's bet in the event of a push. An alias of $pay <user> 1x.'''
 	if isDealer(ctx.author):
-		await ctx.message.delete()
-		payDetails = {
-			'user' 	: int(userMentionString[3:-1]),
-			'ratio' : 1
-		}
-		payoutResponse = payUserOut(ctx,payDetails['user'],payDetails['ratio'],'push')
-		finaldialog = dialogBox(
-			'push',
-			'{user} pushes!'.format(user=payoutResponse['userWhoGotPaid'].real_name),
-			'The house has refunded <@!{userID}>\'s bet of **{amount}**, and their wallet balance is now back at **{balance}**.'.format(
-				userID=payoutResponse['userWhoGotPaid'].dc_uniqueid,
-				amount=asMoney(payoutResponse['payOutTotal']),
-				balance=asMoney(payoutResponse['userWhoGotPaid'].wallet)
+		if global_constants.deleteDealerMessages == True:
+			await ctx.message.delete()
+		dbUser = userInDatabase(int(userMentionString[3:-1]))
+		if int(userMentionString[3:-1]) not in currentBets:
+			dialogBox('warning', 'No bets currently standing for this user.', 'They may have not placed a bet, or the dealer ay have already paid them out.')
+		else:
+			payoutResponse = payUserOut(ctx,userMentionString,1,'win')
+			finaldialog = dialogBox(
+				'push',
+				'{user} pushes!'.format(user=payoutResponse['userWhoGotPaid'].real_name),
+				'The house has refunded <@!{userID}>\'s bet of **{amount}**, and their wallet balance is now back at **{balance}**.'.format(
+					userID=dbUser.dc_uniqueid,
+					amount=asMoney(payoutResponse),
+					balance=asMoney(dbUser.wallet)
+				)
 			)
-		)
-		await ctx.send(embed=finaldialog)
+			finaldialog.set_thumbnail(url=getAvatarURL(ctx,dbUser.dc_uniqueid))
+			await ctx.send(embed=finaldialog)
 	else:
-		await ctx.send(embed=dialogBox('error', 'Only the dealer has access to this command', 'messageContent'))
+		await ctx.send(embed=dialogBox('error', 'Only the dealer has access to this command.'))
 
 # View open/standing bets
 @client.command(aliases=['currentbets', 'standingbets'])
 async def unpaidbets(ctx):
 	'''Displays all bets that are yet to be paid out'''
-	if deleteUserMessages == True:
+	if global_constants.deleteUserMessages == True:
 		await ctx.message.delete()
 
 	if bool(currentBets) == True: # If bets exist in the bets table...
@@ -327,7 +290,7 @@ async def unpaidbets(ctx):
 @client.command(aliases=['split', 'double'])
 async def doubledown(ctx):
 	'''Doubles your bet. Can be done at any time, even if bets are closed.'''
-	if deleteUserMessages == True:
+	if global_constants.deleteUserMessages == True:
 		await ctx.message.delete()
 
 	dbUser = userInDatabase(ctx.author.id)
@@ -356,17 +319,18 @@ async def doubledown(ctx):
 @client.command(aliases=['strat', 'strategy', 'chart', 'basicstrategy'])
 async def strats(ctx):
 	'''Shows the basic Blackjack strategy chart'''
-	if deleteUserMessages == True:
+	if global_constants.deleteUserMessages == True:
 		await ctx.message.delete()
 
 	await ctx.channel.send('https://cdn.discordapp.com/attachments/734766427583676479/734767587157868664/BJA_Basic_Strategy.png')
 
-# Allows the dealer to buy-in a user.
+# Allows the dealer to buy-in a user. Dealer only.
 @client.command()
 async def buyin(ctx, userMentionString):
 	'''DEALER ONLY. Adds $100 to a user's wallet.'''
 	if isDealer(ctx.author):
-		await ctx.message.delete()
+		if global_constants.deleteDealerMessages == True:
+			await ctx.message.delete()
 		dbUser = userInDatabase(userMentionString[3:-1])
 		dbUser.update(wallet=dbUser.wallet+float(100))
 		dbUser.update(total_buyins=dbUser.total_buyins+1)
@@ -375,8 +339,14 @@ async def buyin(ctx, userMentionString):
 			'The dealer has topped up {name}\'s wallet with an extra **$100**, bringing their funds up to **{amt}**.'.format(name=dbUser.real_name, amt=asMoney(dbUser.wallet))
 		))
 	else:
-		await ctx.send(embed=dialogBox('error', 'Only the dealer has access to this command', 'messageContent'))
+		await ctx.send(embed=dialogBox('error', 'Only the dealer has access to this command.'))
+
+@client.command()
+async def avatars(ctx):
+	await ctx.channel.send(getAvatarURL(ctx,ctx.author.id))
+
 
 # -------------------------------------------------------------------------------------------- #
-
-client.run(blacktrack_token.botToken)
+if __name__ == '__main__':
+	print('Logging in...')
+	client.run(botToken)

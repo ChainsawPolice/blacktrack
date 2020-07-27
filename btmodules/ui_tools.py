@@ -8,17 +8,17 @@ uiEmoji = {
 
 	'gear'       : [':gear:', Colour.lighter_grey()],
 
-	'warning'    : [':warning:', Colour.red()],
 	'moneybag'   : [':moneybag:', Colour.gold()],
 	'waiting'    : [':hourglass:', Colour.gold()],
+	'raisedhand' : [':raised_hand:', Colour.gold()],
 
 	'winner'	 : [':partying_face:', Colour.blue()],
 	'loser'	     : [':pensive:', Colour.blue()],
 	'push'	     : [':right_facing_fist:', Colour.blue()],
 	'blackjack'	 : ['<:poggers:731761300509818882>', Colour.blue()],
 
+	'warning'    : [':warning:', Colour.red()],
 	'error'      : [':no_entry:', Colour.red()],
-	'raisedhand' : [':raised_hand:', Colour.red()],
 }
 
 # A wrapper for creating an dialog box-style embed message.
