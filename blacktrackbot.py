@@ -431,19 +431,11 @@ async def buyin(ctx, userMentionString):
 
 @client.event
 async def on_command_error(ctx, error):
-	await ctx.send(f"An error occured: {str(error)}")
 	await ctx.send(embed=dialogBox(
 		'error', 'An error has occurred'.format(dbUser.real_name),
 		'`{}`'.format(error)
 	)
-
-# @client.command()
-# async def initdb(ctx):
-# 	if deleteUserMessages == True:
-# 		await ctx.message.delete()
-# 	await ctx.send(embed=debugMessage('Creating tables...'))
-# 	db.create_all()
-# 	await ctx.send(embed=debugMessage('Database initialised!'))
+	print('test')
 
 @client.command()
 async def getemoji(ctx):
