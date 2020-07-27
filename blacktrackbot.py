@@ -428,7 +428,7 @@ async def buyin(ctx, userMentionString):
 	else:
 		await ctx.send(embed=dialogBox('error', 'Only the dealer has access to this command', 'messageContent'))
 
-@bot.event
+@client.event
 async def on_command_error(ctx, error):
     await ctx.send(f"An error occured: {str(error)}")
 
