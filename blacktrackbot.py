@@ -120,15 +120,14 @@ def payUserOut(ctx,userMentionString, payoutRatio,winState='push'):
 			dbUser.update(total_losses=dbUser.total_losses+1)
 			dbUser.update(total_winnings=dbUser.total_winnings-(currentBets[userMentionString]))
 
-		payResponse = {
-			'userWhoGotPaid' : dbUser,
-			'payOutTotal'    : payAmount-currentBets[userMentionString]
-		}
-
 		# Remove the user's bet from the in-memory bets table.
 		del currentBets[userMentionString]
 
-		return payResponse
+		return {
+			'userWhoGotPaid' : dbUser,
+			'payOutTotal'    : payAmount
+		}
+
 # -------------------------------------------------------------------------------------------- #
 
 # -------------------------------------------------------------------------------------------- #
@@ -272,7 +271,7 @@ async def pay(ctx, userMentionString, payoutRatio):
 		finaldialog = dialogBox(
 			'winner',
 			'{user} wins!'.format(user=payoutResponse['userWhoGotPaid'].real_name),
-			'<@!{userID}> has won their bet back plus their winnings of **{amount}**, and their wallet balance is now **{balance}**.'.format(
+			'The house has paid <@!{userID}> a total of **{amount}**, and their wallet balance is now **{balance}**.'.format(
 				userID=payoutResponse['userWhoGotPaid'].dc_uniqueid,
 				amount=asMoney(payoutResponse['payOutTotal']),
 				balance=asMoney(payoutResponse['userWhoGotPaid'].wallet)
@@ -391,7 +390,7 @@ async def doubledown(ctx):
 		await ctx.send(embed=dialogBox('warning', 'You\'re trying to double or split your bet, but you don\'t have enough in your wallet to do so.', 'Type `$balance` to see how much you have.'))
 	else:
 		dbUser.update(wallet=currentWalletAmount-currentBets[ctx.author.id])
-		currentBets[user_id] = currentBets[ctx.author.id] * 2
+		currentBets[user_id] = currentBets[user_id] * 2
 		await message.channel.send(':dollar: **<@!{name}> has doubled their bet from ${originalAmount} to ${doubledAmount}!** They now have ${amtLeft} left in their wallet.'.format(name=user_id, originalAmount=currentBets[user_id]/2, doubledAmount=currentBets[user_id], amtLeft=wallets[user_id]))
 		await ctx.send(embed=dialogBox(
 			'dollar', '<@!{name}> has doubled their bet from ${originalAmount} to ${doubledAmount}!'.format(
