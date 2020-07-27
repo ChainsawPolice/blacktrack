@@ -103,7 +103,7 @@ def asMoney(value):
 
 # Pay out a user
 def payUserOut(ctx,userMentionString, payoutRatio,winState='push'):
-	dbUser = userInDatabase(ctx.author.id)
+	dbUser = userInDatabase(userMentionString)
 
 	if userMentionString not in currentBets:
 		return dialogBox('warning', 'No bets currently standing for {user}.', 'They may have not placed a bet, or the dealer ay have already paid them out.'.format(user=dbUser.real_name))
@@ -270,7 +270,7 @@ async def pay(ctx, userMentionString, payoutRatio):
 		payoutResponse = payUserOut(ctx,payDetails['user'],payDetails['ratio'],userWinState)
 		finaldialog = dialogBox(
 			'winner',
-			'{user} wins!'.format(user=payoutResponse['userWhoGotPaid'].display_name),
+			'{user} wins!'.format(user=payoutResponse['userWhoGotPaid'].real_name),
 			'The house has paid <@!{userID}> a total of **{amount}**, and their wallet balance is now **{balance}**.'.format(
 				userID=payoutResponse['userWhoGotPaid'].dc_uniqueid,
 				amount=asMoney(payoutResponse['payOutTotal']),
