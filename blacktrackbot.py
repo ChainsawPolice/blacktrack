@@ -432,7 +432,7 @@ async def buyin(ctx, userMentionString):
 @client.event
 async def on_command_error(ctx, error):
 	await ctx.send(embed=dialogBox(
-		'error', 'An error has occurred'.format(dbUser.real_name),
+		'error', 'An error has occurred.',
 		'`{}`'.format(error)
 	))
 
