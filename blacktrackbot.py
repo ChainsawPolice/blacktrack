@@ -21,7 +21,7 @@ uiEmoji = {
 
 	'gear'       : [':gear:', discord.Colour.lighter_grey()],
 
-	'warning'    : [':warning:', discord.Colour.gold()],
+	'warning'    : [':warning:', discord.Colour.red()],
 	'moneybag'   : [':moneybag:', discord.Colour.gold()],
 	'waiting'    : [':hourglass:', discord.Colour.gold()],
 
@@ -382,6 +382,7 @@ async def doubledown(ctx):
 		await ctx.message.delete()
 
 	dbUser = userInDatabase(ctx.author.id)
+	currentWalletAmount = dbUser.wallet
 	#await message.delete()
 	if ctx.author.id not in currentBets:
 		await ctx.send(embed=dialogBox('warning', 'You haven\'t placed a bet.'))
@@ -431,6 +432,10 @@ async def buyin(ctx, userMentionString):
 @client.event
 async def on_command_error(ctx, error):
     await ctx.send(f"An error occured: {str(error)}")
+	await ctx.send(embed=dialogBox(
+		'error', 'An error has occurred'.format(dbUser.real_name),
+		str(`{}`).format(error)
+	))
 
 # @client.command()
 # async def initdb(ctx):

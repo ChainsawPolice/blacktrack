@@ -8,7 +8,6 @@ This bot does not play blackjack; it simply tracks bets for the purpose of the c
 #### Bug fixes
 * Fixed a bug where $pay would pay out the dealer instead of the winner @'ed. Consequently, this would fail if the dealer isn't in the database.
 * Fixed a bug where pay-out messages would not show, yet the payment would still be registered to the database.
-* Fixed a bug where the `$strats` command would do nothing.
 
 ### v0.3
 #### Functionality
@@ -37,8 +36,13 @@ This bot does not play blackjack; it simply tracks bets for the purpose of the c
 ## To do
 #### Functionality
 * Add avatar thumbnails into the win/loss messages _(tried this before, but the relatively-hacky approach I tried never made it out of testing in v0.2.0)_.
-* Test if a plaintext @user has been submitted in $pay instead of a mention/tag.
-$ Signal mistyped commands to the user.
+* Signal mistyped commands to the user.
+* Allow dealer to toggle command deletion.
+* Add `$stats` command.
+* Fix `$split` command.
+* Add Lex's command.
+* Add `$insurance` – like `$doubleup`, but make it 1.5x.
+<!-- * Test if a plaintext @user has been submitted in $pay instead of a mention/tag. -->
 
 #### Code
 * Clean up the god-forgotten mess of sellotaped-together code in `userInDatabase`. Seriously, that function is a mess to look at, even though it works.
