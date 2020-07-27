@@ -434,8 +434,7 @@ async def on_command_error(ctx, error):
 	await ctx.send(embed=dialogBox(
 		'error', 'An error has occurred'.format(dbUser.real_name),
 		'`{}`'.format(error)
-	)
-	print('test')
+	))
 
 @client.command()
 async def getemoji(ctx):
