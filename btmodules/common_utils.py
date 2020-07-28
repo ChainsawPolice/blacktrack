@@ -21,9 +21,11 @@ def isDealer(userObject):
 # Get a user's avatar URL
 def getAvatarURL(ctx,userID):
 	for thisMember in ctx.guild.members:
-		print(thisMember.id)
-		print(userID)
 		if int(thisMember.id) == int(userID):
-			return str(thisMember.avatar_url_as(format='png', static_format='png', size=1024)))
+			return str(thisMember.avatar_url_as(format='png', static_format='png', size=1024))
 	else:
 		return 'https://cdn.discordapp.com/avatars/735083076165828628/b45f1aa524c3c5c6638a4dfacfdf43d2.png?size=1024'
+
+# Convert a user mention string to a user ID.
+def convertMentionToID(userMention):
+	return int(userMention[3:-1])
