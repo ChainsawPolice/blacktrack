@@ -8,6 +8,10 @@ This bot does not play blackjack; it simply tracks bets for the purpose of the c
 
 
 ## Changelog
+### v0.4.1
+#### Bug fixes
+* Fixed an error from v0.4 where bets could not be opened nor closed.
+
 ### v0.4
 #### Functionality
 * Added avatar thumbnails into the win/loss messages _(tried this before, but the relatively-hacky approach I tried never made it out of testing in v0.2.0)_.

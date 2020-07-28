@@ -77,6 +77,7 @@ async def balance(ctx):
 @client.command()
 async def openbets(ctx):
 	'''DEALER ONLY. Opens the table for betting, allows users to place bets with $bet <amount>'''
+	global betsOpen
 	if ctx.message.channel.id in global_constants.validChannels:
 		# Only execute if the message author is a dealer.
 		if isDealer(ctx.author):
@@ -104,6 +105,7 @@ async def openbets(ctx):
 @client.command()
 async def closebets(ctx):
 	'''DEALER ONLY. Closes the table for betting, barring players from placing bets with the $bet command'''
+	global betsOpen
 	if ctx.message.channel.id in global_constants.validChannels:
 		if global_constants.deleteDealerMessages == True:
 			await ctx.message.delete()
@@ -135,6 +137,7 @@ async def closebets(ctx):
 @client.command()
 async def bet(ctx, betAmount):
 	'''If bets are open, places a bet of the specified amount.'''
+	global betsOpen
 	if ctx.message.channel.id in global_constants.validChannels:
 		if global_constants.deleteUserMessages == True:
 			await ctx.message.delete()
