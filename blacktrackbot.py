@@ -366,17 +366,14 @@ async def stats(ctx,userMention=''):
 		# If a user was mentioned, pull the database record for them.
 		# If no mention, default to using the author's message ID as passed through via context.
 		if userMention:
-			await ctx.send(embed=debugMessage('Using mentioned user...'))
 			dbUser = userInDatabase(convertMentionToID(userMention))
 		else:
-			await ctx.send(embed=debugMessage('No mention passed. Using message author...'))
 			dbUser = userInDatabase(ctx.author.id)
 
 		# Check if user exists in database. If so, collect stats and display them.
 		if dbUser == False:
 			None
 		else:
-			await ctx.send(embed=debugMessage('`Command will run for {name}/{id}`'.format(name=dbUser.real_name, id=dbUser.dc_uniqueid)))
 			largestBetInfo = largestBet(dbUser.dc_uniqueid)
 			finaldialog = dialogBox('die','Lifetime statistics for {user}'.format(user=dbUser.real_name))
 			finaldialog.set_thumbnail(url=getAvatarURL(ctx,dbUser.dc_uniqueid))
