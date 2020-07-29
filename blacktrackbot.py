@@ -215,7 +215,7 @@ async def blackjack(ctx, userMentionString):
 				payoutResponse = payUserOut(ctx,userMentionString,payoutRatio,'win')
 				finaldialog = dialogBox(
 					'blackjack',
-					'{user} got blackjack!'.format(user=payoutResponse['userWhoGotPaid'].real_name),
+					'{user} got blackjack!'.format(user=dbUser.real_name),
 					'The house has paid <@!{userID}> a total of **{amount}**, and their wallet balance is now **{balance}**.'.format(
 						userID=dbUser.dc_uniqueid,
 						amount=asMoney(payoutResponse),
@@ -242,7 +242,7 @@ async def bust(ctx, userMentionString):
 				payoutResponse = payUserOut(ctx,userMentionString,0,'win')
 				finaldialog = dialogBox(
 					'loser',
-					'{user} loses!'.format(user=payoutResponse['userWhoGotPaid'].real_name),
+					'{user} loses!'.format(user=dbUser.real_name),
 					'The house has taken <@!{userID}>\'s bet, and their wallet balance is now **{balance}**.'.format(
 						userID=dbUser.dc_uniqueid,
 						amount=asMoney(payoutResponse),
@@ -269,7 +269,7 @@ async def push(ctx, userMentionString):
 				payoutResponse = payUserOut(ctx,userMentionString,1,'win')
 				finaldialog = dialogBox(
 					'push',
-					'{user} pushes!'.format(user=payoutResponse['userWhoGotPaid'].real_name),
+					'{user} pushes!'.format(user=dbUser.real_name),
 					'The house has refunded <@!{userID}>\'s bet of **{amount}**, and their wallet balance is now back at **{balance}**.'.format(
 						userID=dbUser.dc_uniqueid,
 						amount=asMoney(payoutResponse),
@@ -315,8 +315,8 @@ async def doubledown(ctx):
 			await ctx.send(embed=dialogBox('warning', 'You\'re trying to double or split your bet, but you don\'t have enough in your wallet to do so.', 'Type `$balance` to see how much you have.'))
 		else:
 			dbUser.update(wallet=currentWalletAmount-currentBets[ctx.author.id])
-			currentBets[user_id] = currentBets[user_id] * 2
-			await message.channel.send(':dollar: **<@!{name}> has doubled their bet from ${originalAmount} to ${doubledAmount}!** They now have ${amtLeft} left in their wallet.'.format(name=user_id, originalAmount=currentBets[user_id]/2, doubledAmount=currentBets[user_id], amtLeft=wallets[user_id]))
+			currentBets[ctx.author.id] = currentBets[ctx.author.id] * 2
+			await message.channel.send(':dollar: **<@!{name}> has doubled their bet from ${originalAmount} to ${doubledAmount}!** They now have ${amtLeft} left in their wallet.'.format(name=ctx.author.id, originalAmount=currentBets[ctx.author.id]/2, doubledAmount=currentBets[ctx.author.id], amtLeft=wallets[ctx.author.id]))
 			await ctx.send(embed=dialogBox(
 				'dollar', '<@!{name}> has doubled their bet from ${originalAmount} to ${doubledAmount}!'.format(
 					name=ctx.author.id,
