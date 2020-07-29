@@ -27,7 +27,7 @@ def payUserOut(ctx,userMention, payoutRatio,winState):
 	userID = convertMentionToID(userMention) # Chop of the first three chars and the last one.
 	dbUser = userInDatabase(userID)
 	print(payoutRatio)
-	print(payoutRatio.type)
+	print(payoutRatio.type())
 
 	if userID not in currentBets:
 		return False
