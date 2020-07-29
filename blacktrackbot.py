@@ -318,8 +318,8 @@ async def doubledown(ctx):
 			currentBets[ctx.author.id] = currentBets[ctx.author.id] * 2
 			dbUser = userInDatabase(ctx.author.id)
 			await ctx.send(embed=dialogBox(
-				'dollar', '<@!{name}> has doubled their bet from ${originalAmount} to ${doubledAmount}!'.format(
-					name=ctx.author.id,
+				'dollar', '{name} has doubled their bet from ${originalAmount} to ${doubledAmount}!'.format(
+					name=dbUser.real_name,
 					originalAmount=currentBets[ctx.author.id]/2,
 					doubledAmount=currentBets[ctx.author.id]
 				),
