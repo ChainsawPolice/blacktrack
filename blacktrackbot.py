@@ -31,7 +31,7 @@ def payUserOut(ctx,userMention, payoutRatio,winState):
 	if userID not in currentBets:
 		return False
 	else:
-		payAmount = float(currentBets[userID] * float(payoutRatio.strip('x'))) # Calculate pay-out amount (current bet * pay-out ratio).
+		payAmount = float(currentBets[userID] * float(string(payoutRatio).strip('x'))) # Calculate pay-out amount (current bet * pay-out ratio).
 		currentWalletAmount = dbUser.wallet                             # Cache the wallet balance pre-winnings.
 		dbUser.update(wallet=currentWalletAmount+float(payAmount))      # Add the money to the user's wallet in the database.
 
@@ -203,6 +203,7 @@ async def pay(ctx, userMentionString, payoutRatio):
 @client.command()
 async def blackjack(ctx, userMentionString):
 	'''DEALER ONLY. An alias of $pay <user> 2.5x.'''
+	payoutRatio = 2.5x
 	if ctx.message.channel.id in global_constants.validChannels:
 		if isDealer(ctx.author):
 			if global_constants.deleteDealerMessages == True:
