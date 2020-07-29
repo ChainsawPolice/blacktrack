@@ -26,11 +26,13 @@ def payUserOut(ctx,userMention, payoutRatio,winState):
 	'''Takes the user's ID, pay-out ratio, and win-state. Pays out the user, tracks it in the database, then returns the user's name and pay-out amount.'''
 	userID = convertMentionToID(userMention) # Chop of the first three chars and the last one.
 	dbUser = userInDatabase(userID)
+	await ctx.send(embed=debugMessage(payoutRatio))
+	await ctx.send(embed=debugMessage(payoutRatio.type))
 
 	if userID not in currentBets:
 		return False
 	else:
-		payAmount = float(currentBets[userID] * float(payoutRatio.strip('x'))) # Calculate pay-out amount (current bet * pay-out ratio).
+		payAmount = float(currentBets[userID] * float(payoutRatio)) # Calculate pay-out amount (current bet * pay-out ratio).
 		currentWalletAmount = dbUser.wallet                             # Cache the wallet balance pre-winnings.
 		dbUser.update(wallet=currentWalletAmount+float(payAmount))      # Add the money to the user's wallet in the database.
 
