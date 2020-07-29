@@ -31,7 +31,7 @@ def payUserOut(ctx,userMention, payoutRatio,winState):
 	if userID not in currentBets:
 		return False
 	else:
-		payAmount = float(currentBets[userID] * float(string(payoutRatio).strip('x'))) # Calculate pay-out amount (current bet * pay-out ratio).
+		payAmount = float(currentBets[userID] * float(str(payoutRatio).strip('x'))) # Calculate pay-out amount (current bet * pay-out ratio).
 		currentWalletAmount = dbUser.wallet                             # Cache the wallet balance pre-winnings.
 		dbUser.update(wallet=currentWalletAmount+float(payAmount))      # Add the money to the user's wallet in the database.
 
