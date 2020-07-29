@@ -203,7 +203,7 @@ async def pay(ctx, userMentionString, payoutRatio):
 @client.command()
 async def blackjack(ctx, userMentionString):
 	'''DEALER ONLY. An alias of $pay <user> 2.5x.'''
-	payoutRatio = 2.5x
+	payoutRatio = 2.5
 	if ctx.message.channel.id in global_constants.validChannels:
 		if isDealer(ctx.author):
 			if global_constants.deleteDealerMessages == True:
