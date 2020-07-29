@@ -316,7 +316,8 @@ async def doubledown(ctx):
 		else:
 			dbUser.update(wallet=currentWalletAmount-currentBets[ctx.author.id])
 			currentBets[ctx.author.id] = currentBets[ctx.author.id] * 2
-			await ctx.send(':dollar: **<@!{name}> has doubled their bet from ${originalAmount} to ${doubledAmount}!** They now have ${amtLeft} left in their wallet.'.format(name=ctx.author.id, originalAmount=currentBets[ctx.author.id]/2, doubledAmount=currentBets[ctx.author.id], amtLeft=wallets[ctx.author.id]))
+			dbUser = userInDatabase(ctx.author.id)
+			await ctx.send(':dollar: **<@!{name}> has doubled their bet from ${originalAmount} to ${doubledAmount}!** They now have ${amtLeft} left in their wallet.'.format(name=ctx.author.id, originalAmount=currentBets[ctx.author.id]/2, doubledAmount=currentBets[ctx.author.id], amtLeft=dbUser.wallet]))
 			await ctx.send(embed=dialogBox(
 				'dollar', '<@!{name}> has doubled their bet from ${originalAmount} to ${doubledAmount}!'.format(
 					name=ctx.author.id,
