@@ -26,8 +26,8 @@ def payUserOut(ctx,userMention, payoutRatio,winState):
 	'''Takes the user's ID, pay-out ratio, and win-state. Pays out the user, tracks it in the database, then returns the user's name and pay-out amount.'''
 	userID = convertMentionToID(userMention) # Chop of the first three chars and the last one.
 	dbUser = userInDatabase(userID)
-	await ctx.send(embed=debugMessage(payoutRatio))
-	await ctx.send(embed=debugMessage(payoutRatio.type))
+	print(payoutRatio)
+	print(payoutRatio.type)
 
 	if userID not in currentBets:
 		return False
